@@ -191,9 +191,9 @@ app.post('/api/usuarios', (req, res) => {
       `;
       
     await resend.emails.send({
-      from: "SGIAA <no-reply@sgiaair.com>",
+      from: process.env.RESEND_FROM || "SGIAA <no-reply@sgiaair.com>",
       to: correo,
-      subject: "🔐 Código de verificación",
+      subject: "🔐 Código de Verificación - SGIAA UNACH",
       html: emailHtml,
     });
       return res.status(200).json({ mensaje: "Usuario creado. Revisa tu correo para verificar." });
@@ -291,10 +291,10 @@ app.post('/api/usuarios', (req, res) => {
             `;
             
             await resend.emails.send({
-            from: process.env.RESEND_FROM || "SGIAA <onboarding@resend.dev>",
-            to: correo,
-            subject: "🔄 Reenvío de Código de Verificación - SGIAA UNACH",
-            html: emailHtml,
+              from: process.env.RESEND_FROM || "SGIAA <no-reply@sgiaair.com>",
+              to: correo,
+              subject: "🔄 Reenvío de Código de Verificación - SGIAA UNACH",
+              html: emailHtml,
             });
 
             return res.json({ mensaje: "Código reenviado. Revisa tu correo (y Spam)." });
