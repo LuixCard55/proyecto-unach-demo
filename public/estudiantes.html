@@ -201,6 +201,27 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalEditar" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">Editar Estudiante</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-editar">
+                        <input type="hidden" id="editar-id">
+                        <div class="mb-3"><label>Nombre Completo</label><input type="text" id="editar-nombre" class="form-control" required></div>
+                        <div class="mb-3"><label>Correo</label><input type="email" id="editar-correo" class="form-control" required></div>
+                        <div class="mb-3"><label>Contraseña</label><input type="password" id="editar-pass" class="form-control" required></div>
+                        <p class="text-muted small">Nota: Se enviará un nuevo enlace de verificación al correo</p>
+                        <button type="button" onclick="guardarEdicionEstudiante()" class="btn btn-warning w-100">Actualizar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         async function cargarEstudiantes() {
@@ -219,15 +240,17 @@
                         ? '<span class="badge bg-success">Activo</span>' 
                         : '<span class="badge bg-warning text-dark">Pendiente</span>';
 
-                    let botonEliminar = '';
-                    // 🔒 SOLO EL ADMIN PUEDE VER EL BOTÓN BORRAR
+                    let botonesAccion = '';
+                    // 🔒 SOLO EL ADMIN PUEDE VER LOS BOTONES
                     if (rolActual === 'admin') {
-                        botonEliminar = `
-                            <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(${e.id})">
+                        botonesAccion = `
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditar" onclick="cargarEditarEstudiante(${e.id}, '${e.nombre}', '${e.correo}')" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(${e.id})" title="Eliminar">
                                 <i class="fas fa-trash"></i>
                             </button>`;
                     }
-                    // (Si es estudiante o docente, botonEliminar se queda vacío, así que no pueden borrar)
 
                     tabla.innerHTML += `
                         <tr>
@@ -235,7 +258,7 @@
                             <td>${e.nombre}</td>
                             <td>${e.correo}</td>
                             <td>${estado}</td>
-                            <td class="text-center">${botonEliminar}</td>
+                            <td class="text-center">${botonesAccion}</td>
                         </tr>
                     `;
                 });
@@ -275,6 +298,49 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert("Error al registrar el estudiante");
+            }
+        }
+
+        function cargarEditarEstudiante(id, nombre, correo) {
+            document.getElementById('editar-id').value = id;
+            document.getElementById('editar-nombre').value = nombre;
+            document.getElementById('editar-correo').value = correo;
+            document.getElementById('editar-pass').value = '';
+        }
+
+        async function guardarEdicionEstudiante() {
+            const id = document.getElementById('editar-id').value;
+            const nombre = document.getElementById('editar-nombre').value;
+            const correo = document.getElementById('editar-correo').value;
+            const password = document.getElementById('editar-pass').value;
+
+            if (!nombre || !correo || !password) {
+                alert("Todos los campos son obligatorios");
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/editar-usuario-admin/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, correo, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert(data.mensaje || "Estudiante actualizado. Enlace de verificación enviado.");
+                    document.getElementById('form-editar').reset();
+                    const modalElement = document.getElementById('modalEditar');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if(modal) modal.hide();
+                    cargarEstudiantes();
+                } else {
+                    alert(data.mensaje || "Error al actualizar");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert("Error al actualizar el estudiante");
             }
         }
 

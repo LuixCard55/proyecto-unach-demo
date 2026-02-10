@@ -679,6 +679,125 @@ app.get('/api/usuarios', (req, res) => {
 app.get('/api/usuarios/:id', (req, res) => {
     db.query("SELECT * FROM usuarios WHERE id = ?", [req.params.id], (err, r) => res.json(r[0] || {}));
 });
+
+// EDITAR USUARIO POR ADMIN (REENVÍA ENLACE DE VERIFICACIÓN)
+app.post('/api/editar-usuario-admin/:id', (req, res) => {
+  const { id } = req.params;
+  const { nombre, correo, password } = req.body;
+
+  // Validar campos
+  if (!nombre || !correo || !password) {
+    return res.status(400).json({ mensaje: "Todos los campos son obligatorios" });
+  }
+
+  const nombreTrimmed = nombre.trim();
+  const correoNormalizado = correo.trim().toLowerCase();
+  const passwordTrimmed = password.trim();
+
+  // Validar formato de email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(correoNormalizado)) {
+    return res.status(400).json({ mensaje: "Correo inválido" });
+  }
+
+  // Generar nuevo token para verificación
+  const token = crypto.randomBytes(32).toString('hex');
+  const enlaceVerificacion = `${process.env.BASE_URL || 'https://sgiaair.com'}/verificar-enlace?token=${token}`;
+
+  // Actualizar usuario y marcar como pendiente
+  const sql = `UPDATE usuarios SET nombre = ?, correo = ?, password = ?, codigo_verificacion = ?, es_verificado = 0 WHERE id = ?`;
+
+  db.query(sql, [nombreTrimmed, correoNormalizado, passwordTrimmed, token, id], async (err) => {
+    if (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(400).json({ mensaje: "Este correo ya está registrado" });
+      }
+      return res.status(500).json({ mensaje: "Error en base de datos", detalle: err.message });
+    }
+
+    try {
+      // EMAIL CON ENLACE DE VERIFICACIÓN
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Verificar Cambios - SGIAA UNACH</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+          <div style="max-width: 600px; margin: 30px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); padding: 40px 20px; text-align: center;">
+              <img src="https://www.unach.edu.ec/wp-content/uploads/2021/03/logo_unach_2021-02.png" alt="Logo UNACH" style="max-width: 180px; height: auto; margin-bottom: 15px;">
+              <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">SGIAA - Sistema de Gestión Académica</h1>
+              <p style="color: #b8d4f1; margin: 10px 0 0 0; font-size: 14px;">Universidad Nacional de Chimborazo</p>
+            </div>
+
+            <!-- Contenido principal -->
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #002a50; margin: 0 0 15px 0; font-size: 22px; font-weight: 600;">Tu Cuenta Fue Actualizada</h2>
+              <p style="color: #555; line-height: 1.6; margin: 0 0 20px 0; font-size: 15px;">
+                Tu información ha sido actualizada en el Sistema de Gestión Académica. Para confirmar los cambios, por favor verifica tu cuenta.
+              </p>
+
+              <p style="color: #555; line-height: 1.6; margin: 0 0 30px 0; font-size: 15px;">
+                <strong>Nuevos datos:</strong><br>
+                📧 Correo: ${correoNormalizado}<br>
+                🔒 Contraseña: ${passwordTrimmed}<br>
+              </p>
+
+              <!-- Botón de verificación -->
+              <div style="text-align: center; margin: 40px 0;">
+                <a href="${enlaceVerificacion}" style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">✓ Verificar Cambios</a>
+              </div>
+
+              <p style="color: #888; line-height: 1.6; margin: 30px 0 0 0; font-size: 13px;">
+                <strong>¿No funcionó el botón?</strong> Copia y pega este enlace:<br>
+                <span style="word-break: break-all; color: #002a50;">${enlaceVerificacion}</span>
+              </p>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f5f7fa; padding: 25px 30px; border-top: 1px solid #e0e0e0; text-align: center;">
+              <p style="color: #666; margin: 0 0 10px 0; font-size: 13px;">
+                <strong>Sistema de Gestión Académica</strong><br>
+                Universidad Nacional de Chimborazo
+              </p>
+              <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">
+                Riobamba - Ecuador<br>
+                <a href="https://www.unach.edu.ec/" style="color: #002a50; text-decoration: none;">www.unach.edu.ec</a>
+              </p>
+              <p style="color: #ccc; margin: 15px 0 0 0; font-size: 11px;">
+                © 2025 UNACH. Todos los derechos reservados.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      await resend.emails.send({
+        from: process.env.RESEND_FROM || "SGIAA <no-reply@sgiaair.com>",
+        to: correoNormalizado,
+        subject: "✏️ Cambios en tu Cuenta - SGIAA UNACH",
+        html: emailHtml,
+      });
+
+      return res.status(200).json({
+        mensaje: "Usuario actualizado. Se envió un enlace de verificación al correo.",
+        usuario: { id, nombre: nombreTrimmed, correo: correoNormalizado, es_verificado: 0 }
+      });
+
+    } catch (e) {
+      return res.status(500).json({
+        mensaje: "No se pudo enviar el correo. Intenta nuevamente.",
+        detalle: e.message
+      });
+    }
+  });
+});
+
 app.delete('/api/usuarios/:id', (req, res) => {
     db.query("DELETE FROM usuarios WHERE id = ?", [req.params.id], () => res.json({ mensaje: "Eliminado" }));
 });

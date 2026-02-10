@@ -372,6 +372,29 @@
       </div>
     </div>
 
+    <div class="modal fade" id="modalEditarDocente" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-warning text-dark">
+            <h5 class="modal-title">Editar Docente</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <form id="form-editar-docente">
+              <input type="hidden" id="editar-docente-id">
+              <input type="text" id="editar-docente-nombre" class="form-control mb-2" placeholder="Nombre" required>
+              <input type="email" id="editar-docente-correo" class="form-control mb-2" placeholder="Correo" required>
+              <input type="password" id="editar-docente-password" class="form-control mb-2" placeholder="Contraseña" required>
+              <p class="text-muted small">Nota: Se enviará un nuevo enlace de verificación al correo</p>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-warning" onclick="guardarEdicionDocente()">Actualizar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -393,6 +416,7 @@
                             <td><span class="badge bg-info text-dark">Docente</span></td>
                             <td class="text-end">
                                 <button class="btn btn-sm btn-info me-1" onclick="verHojaVida(${d.id})"><i class="fas fa-eye text-white"></i> Ver CV</button>
+                                <button class="btn btn-sm btn-warning me-1 btn-accion" data-bs-toggle="modal" data-bs-target="#modalEditarDocente" onclick="cargarEditarDocente(${d.id}, '${d.nombre}', '${d.correo}')" title="Editar datos"><i class="fas fa-user-edit"></i></button>
                                 <button class="btn btn-sm btn-outline-primary me-1 btn-accion" onclick="abrirModalEditar(${d.id})"><i class="fas fa-edit"></i></button>
                                 <button class="btn btn-sm btn-outline-danger btn-accion" onclick="eliminarUsuario(${d.id})"><i class="fas fa-trash"></i></button>
                             </td>
@@ -473,7 +497,48 @@
             modalEdicion.show();
         }
 
-        async function guardarEdicion() {
+        function cargarEditarDocente(id, nombre, correo) {
+            document.getElementById('editar-docente-id').value = id;
+            document.getElementById('editar-docente-nombre').value = nombre;
+            document.getElementById('editar-docente-correo').value = correo;
+            document.getElementById('editar-docente-password').value = '';
+        }
+
+        async function guardarEdicionDocente() {
+            const id = document.getElementById('editar-docente-id').value;
+            const nombre = document.getElementById('editar-docente-nombre').value;
+            const correo = document.getElementById('editar-docente-correo').value;
+            const password = document.getElementById('editar-docente-password').value;
+
+            if (!nombre || !correo || !password) {
+                alert("Todos los campos son obligatorios");
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/editar-usuario-admin/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, correo, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert(data.mensaje || "Docente actualizado. Enlace de verificación enviado.");
+                    document.getElementById('form-editar-docente').reset();
+                    const modalElement = document.getElementById('modalEditarDocente');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if(modal) modal.hide();
+                    cargarDocentes();
+                } else {
+                    alert(data.mensaje || "Error al actualizar");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert("Error al actualizar el docente");
+            }
+        }
             const id = document.getElementById('edit_id').value;
             const hojaVidaObj = {
                 ci: document.getElementById('hv_ci').value,
