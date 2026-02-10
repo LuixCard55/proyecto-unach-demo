@@ -8,6 +8,7 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 
 const app = express();
+// Puerto de escucha (usa variable de entorno o 3000)
 const PORT = process.env.PORT || 3000;
 
 // --- 1. CONFIGURACIÓN "TODO TERRENO" ---
@@ -24,13 +25,12 @@ process.on('uncaughtException', (err) => {
 });
 
 // --- 2. BASE DE DATOS ---
-const db = mysql.createConnection({
-  host: process.env.MYSQLHOST || 'localhost',
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || '',
-  database: process.env.MYSQLDATABASE || 'unach_sgiaa',
-  port: Number(process.env.MYSQLPORT) || 3306,
-});
+// CONFIGURACIÓN PARA PRODUCCIÓN (Railway)
+const db = mysql.createConnection(process.env.MYSQL_URL);
+// CONFIGURACIÓN PARA XAMPP (LOCALHOST)
+/*const db = mysql.createConnection({
+  host: 'localhost', user: 'root', password: '', database: 'unach_sgiaa'
+});*/
 db.connect(err => {
     if (err) console.error('❌ Error Base de Datos (¿Prendiste XAMPP?):', err.message);
     else console.log('✅ Base de Datos Conectada');
@@ -185,5 +185,5 @@ app.get('/api/stats', (req, res) => {
         res.json(stats);
     });
 });
-
+//Se cambio de este modo al listen porque en producción (Railway) no se puede usar un puerto fijo como el 3000, sino que se debe usar el que asigna la plataforma a través de la variable de entorno PORT. De esta forma, el servidor funcionará tanto en desarrollo (usando el puerto 3000) como en producción (usando el puerto asignado por Railway).
 app.listen(PORT, () => console.log(`🚀 Servidor listo en puerto ${PORT}`));
