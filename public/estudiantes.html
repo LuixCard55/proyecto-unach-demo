@@ -250,16 +250,32 @@
             const correo = document.getElementById('crear-correo').value;
             const password = document.getElementById('crear-pass').value;
 
-            const res = await fetch('/api/usuarios', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre, correo, password, rol: 'estudiante' })
-            });
+            try {
+                const res = await fetch('/api/crear-estudiante-admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, correo, password, rol: 'estudiante' })
+                });
 
-            if (res.ok) {
-                alert("Estudiante registrado");
-                location.reload();
-            } else { alert("Error al registrar"); }
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert(data.mensaje || "Estudiante registrado y correo de verificación enviado");
+                    // Limpiar formulario
+                    document.getElementById('form-crear').reset();
+                    // Cerrar modal
+                    const modalElement = document.getElementById('modalCrear');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if(modal) modal.hide();
+                    // Actualizar tabla
+                    cargarEstudiantes();
+                } else {
+                    alert(data.mensaje || "Error al registrar");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert("Error al registrar el estudiante");
+            }
         }
 
         async function eliminarUsuario(id) {
