@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Responsividad - UNACH</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 5px solid #0d6efd;
+        }
+        .test-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        .checklist {
+            list-style: none;
+        }
+        .checklist li {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #28a745;
+        }
+        .checklist li.warn {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+        }
+        .checklist li.error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        .code-block {
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        .button-demo {
+            display: inline-block;
+            padding: 10px 15px;
+            margin: 5px;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .button-demo:hover {
+            background: #0b5ed7;
+        }
+        .device-info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .device-info strong {
+            color: #0056b3;
+        }
+        .success { color: #28a745; font-weight: bold; }
+        .error { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Test de Responsividad - UNACH SGIAA</h1>
+            <p>Guía de verificación completa para móvil, tablet y desktop</p>
+        </div>
+
+        <!-- INFORMACIÓN DEL DISPOSITIVO -->
+        <div class="device-info">
+            <strong>Información del Dispositivo Actual:</strong>
+            <p id="device-info">Detectando...</p>
+            <p id="viewport-info">Detectando...</p>
+        </div>
+
+        <!-- PRUEBAS MÓVIL -->
+        <div class="test-section">
+            <h2>📱 Pruebas en Móvil (≤480px)</h2>
+            <p style="margin-bottom: 15px; color: #666;">En dispositivos pequeños (teléfonos inteligentes)</p>
+            <ul class="checklist">
+                <li>✓ El sidebar NO está visible en la pantalla inicial</li>
+                <li>✓ Aparece un botón hamburguesa (≡) en la esquina superior izquierda</li>
+                <li>✓ El botón tiene tamaño 45x45 píxeles (fácil de tocar)</li>
+                <li>✓ Al hacer click en el botón, aparece un fondo oscuro</li>
+                <li>✓ El sidebar se desliza suavemente desde la izquierda</li>
+                <li>✓ Los enlaces del menú son clickeables sin problemas</li>
+                <li>✓ Al hacer click en un enlace, el menú se cierra automáticamente</li>
+                <li>✓ Al hacer click en el área oscura, el menú se cierra</li>
+                <li>✓ Las tablas se muestran como tarjetas apiladas (una por línea)</li>
+                <li>✓ El contenido NO se desborda horizontalmente</li>
+                <li>✓ Los textos son legibles sin zoom</li>
+                <li>✓ El padding superior es suficiente (60px) para no cubrir contenido</li>
+            </ul>
+        </div>
+
+        <!-- PRUEBAS TABLET -->
+        <div class="test-section">
+            <h2>⌚ Pruebas en Tablet (481px - 768px)</h2>
+            <p style="margin-bottom: 15px; color: #666;">En dispositivos medianos (tablets)</p>
+            <ul class="checklist">
+                <li>✓ El sidebar NO está visible inicialmente</li>
+                <li>✓ Aparece el botón hamburguesa</li>
+                <li>✓ El overlay (fondo oscuro) funciona correctamente</li>
+                <li>✓ El menú se desliza suavemente sin parpadeos</li>
+                <li>✓ La navegación es intuitiva y sin errores</li>
+                <li>✓ Las tablas son legibles en el formato de tarjetas</li>
+                <li>✓ El contenido se distribuye bien en la pantalla más grande</li>
+                <li>✓ Los botones y formularios son fáciles de usar</li>
+            </ul>
+        </div>
+
+        <!-- PRUEBAS DESKTOP -->
+        <div class="test-section">
+            <h2>🖥️ Pruebas en Desktop (>768px)</h2>
+            <p style="margin-bottom: 15px; color: #666;">En computadoras (laptop/desktop)</p>
+            <ul class="checklist">
+                <li>✓ El botón hamburguesa NO aparece</li>
+                <li>✓ El sidebar está siempre visible a la izquierda</li>
+                <li>✓ El contenido tiene margen izquierdo de 250px</li>
+                <li>✓ Las tablas están en su formato normal (no tarjetas)</li>
+                <li>✓ La navegación funciona como antes</li>
+                <li>✓ Todo se ve exactamente igual a la versión anterior</li>
+            </ul>
+        </div>
+
+        <!-- PROBLEMAS COMUNES -->
+        <div class="test-section">
+            <h2>⚠️ Problemas Comunes y Soluciones</h2>
+            
+            <div style="margin: 15px 0; padding: 15px; background: #fff5f5; border-left: 4px solid #dc3545;">
+                <strong>Problema: El sidebar se ve parcialmente a la derecha</strong>
+                <p style="margin: 10px 0;">✗ INCORRECTO ✗</p>
+                <div class="code-block">width: 0; overflow: hidden; /* Esto deja bordes visibles */</div>
+                <p style="margin: 10px 0;">✓ CORRECTO ✓</p>
+                <div class="code-block">transform: translateX(-100%); /* Oculta completamente */</div>
+            </div>
+
+            <div style="margin: 15px 0; padding: 15px; background: #fff5f5; border-left: 4px solid #dc3545;">
+                <strong>Problema: Los clicks pasan a través del menú</strong>
+                <p style="margin: 10px 0;">✓ SOLUCIONADO ✓</p>
+                <div class="code-block">.sidebar-overlay {
+    pointer-events: auto; /* Captura todos los eventos */
+    background: rgba(0, 0, 0, 0.5); /* Oscuro visible */
+}</div>
+            </div>
+
+            <div style="margin: 15px 0; padding: 15px; background: #fff5f5; border-left: 4px solid #dc3545;">
+                <strong>Problema: El contenido está cubierto por el botón</strong>
+                <p style="margin: 10px 0;">✓ SOLUCIONADO ✓</p>
+                <div class="code-block">.main-content {
+    padding-top: 60px; /* Espacio para el botón fijo */
+}</div>
+            </div>
+
+            <div style="margin: 15px 0; padding: 15px; background: #fff5f5; border-left: 4px solid #dc3545;">
+                <strong>Problema: El botón no está visible o está detrás</strong>
+                <p style="margin: 10px 0;">✓ SOLUCIONADO ✓</p>
+                <div class="code-block">.menu-toggle {
+    z-index: 1002; /* Siempre encima de todo */
+    position: fixed;
+}</div>
+            </div>
+        </div>
+
+        <!-- PRUEBAS EN CHROME DEVTOOLS -->
+        <div class="test-section">
+            <h2>🔧 Cómo Probar en Chrome DevTools</h2>
+            <ol style="line-height: 1.8; margin-left: 20px;">
+                <li><strong>Abre el navegador Chrome</strong> con tu sitio</li>
+                <li><strong>Presiona F12</strong> para abrir Developer Tools</li>
+                <li><strong>Presiona Ctrl+Shift+M</strong> para Toggle Device Toolbar</li>
+                <li><strong>Selecciona un dispositivo:</strong>
+                    <ul style="margin: 10px 0 10px 20px;">
+                        <li>iPhone 12 Pro → 390x844px (móvil)</li>
+                        <li>iPad Air → 768x1024px (tablet)</li>
+                        <li>Galaxy Tab S7 → 1024x1280px (tablet grande)</li>
+                    </ul>
+                </li>
+                <li><strong>Recarga la página:</strong> F5 o Ctrl+R</li>
+                <li><strong>Prueba el menú:</strong> Click en ≡</li>
+            </ol>
+        </div>
+
+        <!-- PRUEBAS EN ANDROID REAL -->
+        <div class="test-section">
+            <h2>📱 Cómo Probar en Android Real</h2>
+            <ol style="line-height: 1.8; margin-left: 20px;">
+                <li><strong>Obtén la IP de tu PC:</strong>
+                    <div class="code-block">Windows: ipconfig | findstr "IPv4"</div>
+                </li>
+                <li><strong>Asegúrate que tu Android esté en la misma red WiFi</strong></li>
+                <li><strong>Abre un navegador en tu Android</strong></li>
+                <li><strong>Ingresa la URL:</strong>
+                    <div class="code-block">http://192.168.x.x:3000/dashboard.html</div>
+                </li>
+                <li><strong>Prueba la navegación del menú</strong></li>
+            </ol>
+        </div>
+
+        <!-- CHECKLIST TÉCNICO -->
+        <div class="test-section">
+            <h2>⚙️ Checklist Técnico (Desarrollador)</h2>
+            <ul class="checklist">
+                <li>✓ Todos los archivos HTML tienen meta viewport</li>
+                <li>✓ responsive.js se carga en todas las páginas</li>
+                <li>✓ CSS tiene @media queries para 768px y 480px</li>
+                <li>✓ Sidebar usa transform: translateX(-100%)</li>
+                <li>✓ Overlay tiene z-index: 999</li>
+                <li>✓ Botón tiene z-index: 1002</li>
+                <li>✓ No hay width: 0; en el sidebar en móvil</li>
+                <li>✓ main-content tiene padding-top: 60px en móvil</li>
+                <li>✓ pointer-events está bien configurado</li>
+                <li>✓ Transiciones son suaves (0.3s ease)</li>
+            </ul>
+        </div>
+
+        <!-- RESULTADO ESPERADO -->
+        <div class="test-section" style="border-left-color: #28a745; background: #f0fff4;">
+            <h2 style="color: #28a745;">✅ Resultado Esperado</h2>
+            <div style="font-size: 1.1rem; line-height: 1.8;">
+                <p><strong>En Android/Tablet:</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>Menú invisible inicialmente (completamente oculto)</li>
+                    <li>Click en ≡ → Menú se desliza suavemente desde la izquierda</li>
+                    <li>Fondo oscuro visible detrás del menú</li>
+                    <li>Click en fondo oscuro → Menú se cierra</li>
+                    <li>Click en link → Navega y menú se cierra automáticamente</li>
+                    <li>No hay clicks accidentales en otros elementos</li>
+                    <li>Contenido perfectamente visible y legible</li>
+                </ul>
+                <p style="margin-top: 15px;"><strong>En Desktop:</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>Botón hamburguesa no aparece</li>
+                    <li>Sidebar siempre visible</li>
+                    <li>Funciona exactamente como antes</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- CONTACTO/SOPORTE -->
+        <div class="test-section">
+            <h2>📞 Si Algo No Funciona</h2>
+            <ol style="line-height: 1.8; margin-left: 20px; color: #666;">
+                <li>Limpia el cache: <strong>Ctrl+Shift+Delete</strong> (en Chrome)</li>
+                <li>Recarga la página: <strong>Ctrl+F5</strong> (fuerza recarga)</li>
+                <li>Abre Chrome Incógnito (sin extensiones)</li>
+                <li>Abre la consola: <strong>F12 → Console</strong> para ver errores</li>
+                <li>Verifica que responsive.js esté cargado: <strong>F12 → Network → js</strong></li>
+                <li>Comprueba los estilos: <strong>F12 → Elements → Inspect elemento</strong></li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Script para detectar el dispositivo actual
+        function updateDeviceInfo() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const userAgent = navigator.userAgent;
+            
+            let deviceType = 'Desktop';
+            let deviceColor = '#0056b3';
+            
+            if (width <= 480) {
+                deviceType = '📱 MÓVIL (≤480px)';
+                deviceColor = '#dc3545';
+            } else if (width <= 768) {
+                deviceType = '⌚ TABLET (481-768px)';
+                deviceColor = '#ffc107';
+            } else {
+                deviceType = '🖥️ DESKTOP (>768px)';
+                deviceColor = '#28a745';
+            }
+            
+            document.getElementById('device-info').innerHTML = 
+                `<span style="color: ${deviceColor}; font-size: 1.2rem;">${deviceType}</span>`;
+            
+            document.getElementById('viewport-info').innerHTML = 
+                `Resolución: <strong>${width}x${height}px</strong> | User Agent: ${userAgent.substring(0, 50)}...`;
+        }
+        
+        // Actualizar al cargar y al redimensionar
+        updateDeviceInfo();
+        window.addEventListener('resize', updateDeviceInfo);
+    </script>
+</body>
+</html>
