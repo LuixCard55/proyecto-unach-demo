@@ -115,7 +115,7 @@ CREATE TABLE `usuarios` (
   `rol` enum('admin','docente','estudiante') DEFAULT 'estudiante',
   `fecha_registro` datetime DEFAULT current_timestamp(),
   `hoja_vida` text DEFAULT NULL,
-  `codigo_verificacion` varchar(6) DEFAULT NULL,
+  `codigo_verificacion` varchar(255) DEFAULT NULL,
   `es_verificado` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

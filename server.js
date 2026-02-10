@@ -717,7 +717,7 @@ app.post('/api/editar-usuario-admin/:id', (req, res) => {
     // Actualizar usuario y marcar como pendiente
     const sql = `UPDATE usuarios SET nombre = ?, correo = ?, password = ?, codigo_verificacion = ?, es_verificado = 0 WHERE id = ?`;
 
-    db.query(sql, [nombreTrimmed, correoNormalizado, passwordTrimmed, token, id], async (err) => {
+    db.query(sql, [nombreTrimmed, correoNormalizado, passwordTrimmed, token, id], (err) => {
       if (err) {
         if (err.code === 'ER_DUP_ENTRY') {
           return res.status(400).json({ mensaje: "Este correo ya está registrado" });
@@ -753,17 +753,17 @@ app.post('/api/editar-usuario-admin/:id', (req, res) => {
 
                 <p style="color: #555; line-height: 1.6; margin: 0 0 30px 0; font-size: 15px;">
                   <strong>Nuevos datos:</strong><br>
-                  📧 Correo: ${correoNormalizado}<br>
-                  🔒 Contraseña: ${passwordTrimmed}<br>
+                  Correo: ${correoNormalizado}<br>
+                  Contraseña: ${passwordTrimmed}<br>
                 </p>
 
                 <!-- Botón de verificación -->
                 <div style="text-align: center; margin: 40px 0;">
-                  <a href="${enlaceVerificacion}" style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">✓ Verificar Cambios</a>
+                  <a href="${enlaceVerificacion}" style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">Verificar Cambios</a>
                 </div>
 
                 <p style="color: #888; line-height: 1.6; margin: 30px 0 0 0; font-size: 13px;">
-                  <strong>¿No funcionó el botón?</strong> Copia y pega este enlace:<br>
+                  <strong>No funcionó el botón?</strong> Copia y pega este enlace:<br>
                   <span style="word-break: break-all; color: #002a50;">${enlaceVerificacion}</span>
                 </p>
               </div>
@@ -787,13 +787,17 @@ app.post('/api/editar-usuario-admin/:id', (req, res) => {
           </html>
         `;
 
-        await resend.emails.send({
+        // Enviar email sin await (callback style)
+        resend.emails.send({
           from: process.env.RESEND_FROM || "SGIAA <no-reply@sgiaair.com>",
           to: correoNormalizado,
-          subject: "✏️ Cambios en tu Cuenta - SGIAA UNACH",
+          subject: "Cambios en tu Cuenta - SGIAA UNACH",
           html: emailHtml,
+        }).catch((emailErr) => {
+          console.error("Error enviando email:", emailErr.message);
         });
 
+        // Responder inmediatamente sin esperar el email
         return res.status(200).json({
           mensaje: "Usuario actualizado. Se envió un enlace de verificación al correo.",
           usuario: { id, nombre: nombreTrimmed, correo: correoNormalizado, es_verificado: 0 }
@@ -801,7 +805,7 @@ app.post('/api/editar-usuario-admin/:id', (req, res) => {
 
       } catch (e) {
         return res.status(500).json({
-          mensaje: "No se pudo enviar el correo. Intenta nuevamente.",
+          mensaje: "Error al procesar la solicitud",
           detalle: e.message
         });
       }
