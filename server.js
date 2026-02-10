@@ -25,7 +25,11 @@ process.on('uncaughtException', (err) => {
 
 // --- 2. BASE DE DATOS ---
 const db = mysql.createConnection({
-    host: 'localhost', user: 'root', password: '', database: 'unach_sgiaa'
+  host: process.env.MYSQLHOST || 'localhost',
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || '',
+  database: process.env.MYSQLDATABASE || 'unach_sgiaa',
+  port: Number(process.env.MYSQLPORT) || 3306,
 });
 db.connect(err => {
     if (err) console.error('❌ Error Base de Datos (¿Prendiste XAMPP?):', err.message);
