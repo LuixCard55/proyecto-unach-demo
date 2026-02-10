@@ -190,13 +190,12 @@ app.post('/api/usuarios', (req, res) => {
         </html>
       `;
       
-      await resend.emails.send({
-        from: "SGIAA <onboarding@resend.dev>",
-        to: correo,
-        subject: "🔐 Código de Verificación - SGIAA UNACH",
-        html: emailHtml,
-      });
-
+    await resend.emails.send({
+      from: "SGIAA <no-reply@sgiaair.com>",
+      to: correo,
+      subject: "🔐 Código de verificación",
+      html: emailHtml,
+    });
       return res.status(200).json({ mensaje: "Usuario creado. Revisa tu correo para verificar." });
 
     } catch (e) {
