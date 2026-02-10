@@ -384,12 +384,11 @@
               <input type="hidden" id="editar-docente-id">
               <input type="text" id="editar-docente-nombre" class="form-control mb-2" placeholder="Nombre" required>
               <input type="email" id="editar-docente-correo" class="form-control mb-2" placeholder="Correo" required>
-              <input type="password" id="editar-docente-password" class="form-control mb-2" placeholder="Contraseña" required>
-              <p class="text-muted small">Nota: Se enviará un nuevo enlace de verificación al correo</p>
+              <p class="text-muted small">💡 <strong>Nota:</strong> Se enviará un enlace de verificación con los datos de la cuenta al nuevo correo.</p>
             </form>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-warning" onclick="guardarEdicionDocente()">Actualizar</button>
+            <button type="button" class="btn btn-warning" onclick="guardarEdicionDocente()">Actualizar Datos</button>
           </div>
         </div>
       </div>
@@ -501,17 +500,15 @@
             document.getElementById('editar-docente-id').value = id;
             document.getElementById('editar-docente-nombre').value = nombre;
             document.getElementById('editar-docente-correo').value = correo;
-            document.getElementById('editar-docente-password').value = '';
         }
 
         async function guardarEdicionDocente() {
             const id = document.getElementById('editar-docente-id').value;
             const nombre = document.getElementById('editar-docente-nombre').value;
             const correo = document.getElementById('editar-docente-correo').value;
-            const password = document.getElementById('editar-docente-password').value;
 
-            if (!nombre || !correo || !password) {
-                alert("Todos los campos son obligatorios");
+            if (!nombre || !correo) {
+                alert("Nombre y correo son obligatorios");
                 return;
             }
 
@@ -519,7 +516,7 @@
                 const res = await fetch(`/api/editar-usuario-admin/${id}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre, correo, password })
+                    body: JSON.stringify({ nombre, correo })
                 });
 
                 const data = await res.json();

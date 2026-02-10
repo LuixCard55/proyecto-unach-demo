@@ -683,16 +683,15 @@ app.get('/api/usuarios/:id', (req, res) => {
 // EDITAR USUARIO POR ADMIN (REENVÍA ENLACE DE VERIFICACIÓN)
 app.post('/api/editar-usuario-admin/:id', (req, res) => {
   const { id } = req.params;
-  const { nombre, correo, password } = req.body;
+  const { nombre, correo } = req.body;
 
-  // Validar campos
-  if (!nombre || !correo || !password) {
-    return res.status(400).json({ mensaje: "Todos los campos son obligatorios" });
+  // Validar campos (ya NO pedimos contraseña)
+  if (!nombre || !correo) {
+    return res.status(400).json({ mensaje: "Nombre y correo son obligatorios" });
   }
 
   const nombreTrimmed = nombre.trim();
   const correoNormalizado = correo.trim().toLowerCase();
-  const passwordTrimmed = password.trim();
 
   // Validar formato de email
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -700,7 +699,7 @@ app.post('/api/editar-usuario-admin/:id', (req, res) => {
     return res.status(400).json({ mensaje: "Correo inválido" });
   }
 
-  // Primero verificar que el usuario existe
+  // Primero verificar que el usuario existe (para obtener su contraseña)
   db.query("SELECT * FROM usuarios WHERE id = ?", [id], (errSelect, usuarioActual) => {
     if (errSelect) {
       return res.status(500).json({ mensaje: "Error al buscar usuario", detalle: errSelect.message });
@@ -710,14 +709,17 @@ app.post('/api/editar-usuario-admin/:id', (req, res) => {
       return res.status(404).json({ mensaje: "Usuario no encontrado" });
     }
 
+    // Obtener contraseña actual del usuario
+    const passwordActual = usuarioActual[0].password;
+
     // Generar nuevo token para verificación
     const token = crypto.randomBytes(32).toString('hex');
     const enlaceVerificacion = `${process.env.BASE_URL || 'https://sgiaair.com'}/verificar-enlace?token=${token}`;
 
-    // Actualizar usuario y marcar como pendiente
-    const sql = `UPDATE usuarios SET nombre = ?, correo = ?, password = ?, codigo_verificacion = ?, es_verificado = 0 WHERE id = ?`;
+    // Actualizar SOLO nombre y correo (NO la contraseña), marcar como pendiente
+    const sql = `UPDATE usuarios SET nombre = ?, correo = ?, codigo_verificacion = ?, es_verificado = 0 WHERE id = ?`;
 
-    db.query(sql, [nombreTrimmed, correoNormalizado, passwordTrimmed, token, id], (err) => {
+    db.query(sql, [nombreTrimmed, correoNormalizado, token, id], (err) => {
       if (err) {
         if (err.code === 'ER_DUP_ENTRY') {
           return res.status(400).json({ mensaje: "Este correo ya está registrado" });
@@ -726,14 +728,14 @@ app.post('/api/editar-usuario-admin/:id', (req, res) => {
       }
 
       try {
-        // EMAIL CON ENLACE DE VERIFICACIÓN
+        // EMAIL CON ENLACE Y DATOS DE LA CUENTA
         const emailHtml = `
           <!DOCTYPE html>
           <html lang="es">
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Verificar Cambios - SGIAA UNACH</title>
+            <title>Verificación de Cuenta - SGIAA UNACH</title>
           </head>
           <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
             <div style="max-width: 600px; margin: 30px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
@@ -746,25 +748,41 @@ app.post('/api/editar-usuario-admin/:id', (req, res) => {
 
               <!-- Contenido principal -->
               <div style="padding: 40px 30px;">
-                <h2 style="color: #002a50; margin: 0 0 15px 0; font-size: 22px; font-weight: 600;">Tu Cuenta Fue Actualizada</h2>
+                <h2 style="color: #002a50; margin: 0 0 15px 0; font-size: 22px; font-weight: 600;">Tu Cuenta Ha Sido Actualizada</h2>
                 <p style="color: #555; line-height: 1.6; margin: 0 0 20px 0; font-size: 15px;">
-                  Tu información ha sido actualizada en el Sistema de Gestión Académica. Para confirmar los cambios, por favor verifica tu cuenta.
+                  Ha habido cambios en tu cuenta del Sistema de Gestión Académica. Para confirmar los cambios, por favor verifica tu cuenta usando el botón de abajo.
                 </p>
 
-                <p style="color: #555; line-height: 1.6; margin: 0 0 30px 0; font-size: 15px;">
-                  <strong>Nuevos datos:</strong><br>
-                  Correo: ${correoNormalizado}<br>
-                  Contraseña: ${passwordTrimmed}<br>
-                </p>
+                <!-- Datos de la Cuenta -->
+                <div style="background: #f0f4f8; border-left: 4px solid #002a50; padding: 15px; margin: 25px 0; border-radius: 4px;">
+                  <h3 style="color: #002a50; margin: 0 0 12px 0; font-size: 16px;">📋 Datos de tu Cuenta:</h3>
+                  <table style="width: 100%; color: #333; font-size: 14px; line-height: 1.8;">
+                    <tr>
+                      <td style="padding: 5px 0;"><strong>👤 Nombre:</strong></td>
+                      <td style="padding: 5px 0;">${nombreTrimmed}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 5px 0;"><strong>📧 Correo Electrónico:</strong></td>
+                      <td style="padding: 5px 0; color: #002a50; font-weight: 500;">${correoNormalizado}</td>
+                    </tr>
+                    <tr style="border-top: 1px solid #d0d8e0;">
+                      <td style="padding: 5px 0;"><strong>🔒 Contraseña:</strong></td>
+                      <td style="padding: 5px 0; font-family: monospace; background: #ffffff; padding: 8px; border-radius: 3px;">${passwordActual}</td>
+                    </tr>
+                  </table>
+                  <p style="color: #666; margin: 12px 0 0 0; font-size: 12px; line-height: 1.5;">
+                    ℹ️ La contraseña no ha cambiado. Usa estos datos para acceder al sistema.
+                  </p>
+                </div>
 
                 <!-- Botón de verificación -->
                 <div style="text-align: center; margin: 40px 0;">
-                  <a href="${enlaceVerificacion}" style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">Verificar Cambios</a>
+                  <a href="${enlaceVerificacion}" style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">✓ Verificar Cambios</a>
                 </div>
 
                 <p style="color: #888; line-height: 1.6; margin: 30px 0 0 0; font-size: 13px;">
-                  <strong>No funcionó el botón?</strong> Copia y pega este enlace:<br>
-                  <span style="word-break: break-all; color: #002a50;">${enlaceVerificacion}</span>
+                  <strong>¿No funcionó el botón?</strong> Copia y pega este enlace:<br>
+                  <span style="word-break: break-all; color: #002a50; font-size: 12px;">${enlaceVerificacion}</span>
                 </p>
               </div>
 
@@ -791,7 +809,7 @@ app.post('/api/editar-usuario-admin/:id', (req, res) => {
         resend.emails.send({
           from: process.env.RESEND_FROM || "SGIAA <no-reply@sgiaair.com>",
           to: correoNormalizado,
-          subject: "Cambios en tu Cuenta - SGIAA UNACH",
+          subject: "Verificación de Cambios en tu Cuenta - SGIAA UNACH",
           html: emailHtml,
         }).catch((emailErr) => {
           console.error("Error enviando email:", emailErr.message);

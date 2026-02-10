@@ -212,10 +212,9 @@
                     <form id="form-editar">
                         <input type="hidden" id="editar-id">
                         <div class="mb-3"><label>Nombre Completo</label><input type="text" id="editar-nombre" class="form-control" required></div>
-                        <div class="mb-3"><label>Correo</label><input type="email" id="editar-correo" class="form-control" required></div>
-                        <div class="mb-3"><label>Contraseña</label><input type="password" id="editar-pass" class="form-control" required></div>
-                        <p class="text-muted small">Nota: Se enviará un nuevo enlace de verificación al correo</p>
-                        <button type="button" onclick="guardarEdicionEstudiante()" class="btn btn-warning w-100">Actualizar</button>
+                        <div class="mb-3"><label>Correo Electrónico</label><input type="email" id="editar-correo" class="form-control" required></div>
+                        <p class="text-muted small">💡 <strong>Nota:</strong> Se enviará un enlace de verificación con los datos de la cuenta al nuevo correo.</p>
+                        <button type="button" onclick="guardarEdicionEstudiante()" class="btn btn-warning w-100">Actualizar Datos</button>
                     </form>
                 </div>
             </div>
@@ -305,17 +304,15 @@
             document.getElementById('editar-id').value = id;
             document.getElementById('editar-nombre').value = nombre;
             document.getElementById('editar-correo').value = correo;
-            document.getElementById('editar-pass').value = '';
         }
 
         async function guardarEdicionEstudiante() {
             const id = document.getElementById('editar-id').value;
             const nombre = document.getElementById('editar-nombre').value;
             const correo = document.getElementById('editar-correo').value;
-            const password = document.getElementById('editar-pass').value;
 
-            if (!nombre || !correo || !password) {
-                alert("Todos los campos son obligatorios");
+            if (!nombre || !correo) {
+                alert("Nombre y correo son obligatorios");
                 return;
             }
 
@@ -323,7 +320,7 @@
                 const res = await fetch(`/api/editar-usuario-admin/${id}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre, correo, password })
+                    body: JSON.stringify({ nombre, correo })
                 });
 
                 const data = await res.json();
