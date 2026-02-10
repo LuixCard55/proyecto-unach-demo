@@ -212,7 +212,7 @@
                 document.getElementById('fecha-acceso').innerText = fecha.toLocaleDateString('es-ES', opciones);
 
                 // Pedimos datos a la BD
-                const res = await fetch(`http://localhost:3000/api/usuarios/${usuarioId}`);
+                const res = await fetch(`/api/usuarios/${usuarioId}`);
                 const datos = await res.json();
                 
                 // LLENAMOS LOS CAMPOS DE TEXTO (No Inputs)

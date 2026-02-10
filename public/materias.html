@@ -143,7 +143,7 @@
                 // Primero dibujamos los cuadros vacíos
                 dibujarSemestres();
 
-                const res = await fetch('http://localhost:3000/api/materias');
+                const res = await fetch('/api/materias');
                 const materias = await res.json();
                 
                 materias.forEach(m => {
@@ -185,7 +185,7 @@
             if(!nombre || !codigo) return alert("Completa los datos");
 
             try {
-                await fetch('http://localhost:3000/api/materias', {
+                await fetch('/api/materias', {
                     method: 'POST',
                     headers: {'Content-Type':'application/json'},
                     body: JSON.stringify({ nombre, codigo, semestre })
@@ -203,7 +203,7 @@
         // 4. ELIMINAR MATERIA
         async function eliminarMateria(id) {
             if(confirm('¿Seguro que deseas eliminar esta asignatura de la malla?')) {
-                await fetch(`http://localhost:3000/api/materias/${id}`, { method: 'DELETE' });
+                await fetch(`/api/materias/${id}`, { method: 'DELETE' });
                 cargarMaterias();
             }
         }

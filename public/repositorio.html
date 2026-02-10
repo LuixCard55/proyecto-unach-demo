@@ -87,7 +87,7 @@
         // 1. CARGAR ARCHIVOS
         async function cargarRepositorio() {
             try {
-                const res = await fetch('http://localhost:3000/api/repositorio');
+                const res = await fetch('/api/repositorio');
                 const archivos = await res.json();
                 const tabla = document.getElementById('tabla-repositorio');
                 tabla.innerHTML = '';
@@ -140,7 +140,7 @@
             formData.append('usuario_id', usuario_id);
 
             try {
-                const res = await fetch('http://localhost:3000/api/repositorio', {
+                const res = await fetch('/api/repositorio', {
                     method: 'POST',
                     body: formData
                 });
@@ -160,7 +160,7 @@
             if(!confirm("¿Estás seguro de eliminar este archivo permanentemente?")) return;
 
             try {
-                const res = await fetch(`http://localhost:3000/api/repositorio/${id}`, {
+                const res = await fetch(`/api/repositorio/${id}`, {
                     method: 'DELETE'
                 });
 

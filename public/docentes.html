@@ -256,7 +256,7 @@
         // --- 1. CARGAR DOCENTES ---
         async function cargarDocentes() {
             try {
-                const res = await fetch('http://localhost:3000/api/usuarios');
+                const res = await fetch('/api/usuarios');
                 const usuarios = await res.json();
                 const docentes = usuarios.filter(u => u.rol.toLowerCase() === 'docente');
                 const tabla = document.getElementById('tabla-docentes');
@@ -285,7 +285,7 @@
         async function verHojaVida(id) {
             try {
                 // Pedimos datos frescos al servidor
-                const res = await fetch(`http://localhost:3000/api/usuarios/${id}`);
+                const res = await fetch(`/api/usuarios/${id}`);
                 const d = await res.json();
                 
                 let hv = {};
@@ -328,7 +328,7 @@
         // --- 3. EDITAR DOCENTE ---
         let modalEdicion;
         async function abrirModalEditar(id) {
-            const res = await fetch(`http://localhost:3000/api/usuarios/${id}`);
+            const res = await fetch(`/api/usuarios/${id}`);
             const d = await res.json();
             let hv = {};
             try { hv = JSON.parse(d.hoja_vida || '{}'); } catch(e) { hv = {}; }
@@ -371,7 +371,7 @@
                 rol: 'docente'
             };
 
-            await fetch(`http://localhost:3000/api/usuarios/${id}`, {
+            await fetch(`/api/usuarios/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(datos)
@@ -385,7 +385,7 @@
             const nombre = document.getElementById('nuevo_nombre').value;
             const correo = document.getElementById('nuevo_correo').value;
             const password = document.getElementById('nuevo_password').value;
-            await fetch('http://localhost:3000/api/usuarios', {
+            await fetch('/api/usuarios', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nombre, correo, password, rol: 'docente' })
@@ -395,7 +395,7 @@
 
         async function eliminarUsuario(id) {
             if(confirm("¿Eliminar?")) {
-                await fetch(`http://localhost:3000/api/usuarios/${id}`, { method: 'DELETE' });
+                await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
                 cargarDocentes();
             }
         }

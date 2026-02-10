@@ -89,7 +89,7 @@
     <script>
         async function cargarEstudiantes() {
             try {
-                const res = await fetch('http://localhost:3000/api/usuarios');
+                const res = await fetch('/api/usuarios');
                 const usuarios = await res.json();
                 const tabla = document.getElementById('tabla-estudiantes');
                 tabla.innerHTML = '';
@@ -134,7 +134,7 @@
             const correo = document.getElementById('crear-correo').value;
             const password = document.getElementById('crear-pass').value;
 
-            const res = await fetch('http://localhost:3000/api/usuarios', {
+            const res = await fetch('/api/usuarios', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nombre, correo, password, rol: 'estudiante' })
@@ -148,7 +148,7 @@
 
         async function eliminarUsuario(id) {
             if(!confirm("¿Eliminar estudiante?")) return;
-            await fetch(`http://localhost:3000/api/usuarios/${id}`, { method: 'DELETE' });
+            await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
             cargarEstudiantes();
         }
 
