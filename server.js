@@ -4,6 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const fs = require('fs');
+const crypto = require('crypto');
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 const path = require('path');
@@ -252,8 +253,269 @@ app.post('/api/usuarios', (req, res) => {
   });
 });
 
+// CREAR USUARIO POR ADMIN (CON ENLACE DE VERIFICACIÓN AUTOMÁTICA)
+app.post('/api/crear-estudiante-admin', (req, res) => {
+  const { nombre, correo, password, rol } = req.body;
+
+  // Validar campos obligatorios
+  if (!nombre || !correo || !password || !rol) {
+    return res.status(400).json({ mensaje: "Faltan datos obligatorios" });
+  }
+
+  // Trimear y normalizar datos
+  const nombreTrimmed = nombre.trim();
+  const correoNormalizado = correo.trim().toLowerCase();
+  const passwordTrimmed = password.trim();
+
+  // Validar
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(correoNormalizado)) {
+    return res.status(400).json({ mensaje: "Correo inválido" });
+  }
+
+  // Generar token único para verificación
+  const token = crypto.randomBytes(32).toString('hex');
+  const enlaceVerificacion = `${process.env.BASE_URL || 'https://sgiaair.com'}/verificar-enlace?token=${token}`;
+
+  const sql = `
+    INSERT INTO usuarios (nombre, correo, password, rol, codigo_verificacion, es_verificado)
+    VALUES (?, ?, ?, ?, ?, 0)
+  `;
+
+  db.query(sql, [nombreTrimmed, correoNormalizado, passwordTrimmed, rol, token], async (err) => {
+    if (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(400).json({ mensaje: "Este correo ya está registrado" });
+      }
+      return res.status(500).json({ mensaje: "Error en base de datos", detalle: err.message });
+    }
+
+    try {
+      // ✅ EMAIL CON ENLACE DE VERIFICACIÓN
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Verificar Cuenta - SGIAA UNACH</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+          <div style="max-width: 600px; margin: 30px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+            <!-- Header con color UNACH -->
+            <div style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); padding: 40px 20px; text-align: center;">
+              <img src="https://www.unach.edu.ec/wp-content/uploads/2021/03/logo_unach_2021-02.png" alt="Logo UNACH" style="max-width: 180px; height: auto; margin-bottom: 15px;">
+              <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">SGIAA - Sistema de Gestión Académica</h1>
+              <p style="color: #b8d4f1; margin: 10px 0 0 0; font-size: 14px;">Universidad Nacional de Chimborazo</p>
+            </div>
+
+            <!-- Contenido principal -->
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #002a50; margin: 0 0 15px 0; font-size: 22px; font-weight: 600;">¡Bienvenido a SGIAA!</h2>
+              <p style="color: #555; line-height: 1.6; margin: 0 0 20px 0; font-size: 15px;">
+                Tu cuenta ha sido creada en el Sistema de Gestión Académica de la Universidad Nacional de Chimborazo.
+              </p>
+
+              <p style="color: #555; line-height: 1.6; margin: 0 0 30px 0; font-size: 15px;">
+                <strong>Datos de acceso:</strong><br>
+                📧 Correo: ${correoNormalizado}<br>
+                🔒 Contraseña: ${passwordTrimmed}<br>
+              </p>
+
+              <p style="color: #555; line-height: 1.6; margin: 0 0 30px 0; font-size: 15px;">
+                Para acceder a tu cuenta, haz clic en el botón de abajo. Automáticamente se verificará y podrás iniciar sesión.
+              </p>
+
+              <!-- Botón de verificación -->
+              <div style="text-align: center; margin: 40px 0;">
+                <a href="${enlaceVerificacion}" style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">✓ Verificar Mi Cuenta</a>
+              </div>
+
+              <p style="color: #888; line-height: 1.6; margin: 30px 0 0 0; font-size: 13px;">
+                <strong>¿No funcionó el botón?</strong> Copia y pega este enlace en tu navegador:<br>
+                <span style="word-break: break-all; color: #002a50;">${enlaceVerificacion}</span>
+              </p>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f5f7fa; padding: 25px 30px; border-top: 1px solid #e0e0e0; text-align: center;">
+              <p style="color: #666; margin: 0 0 10px 0; font-size: 13px;">
+                <strong>Sistema de Gestión Académica</strong><br>
+                Universidad Nacional de Chimborazo
+              </p>
+              <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">
+                Riobamba - Ecuador<br>
+                <a href="https://www.unach.edu.ec/" style="color: #002a50; text-decoration: none;">www.unach.edu.ec</a>
+              </p>
+              <p style="color: #ccc; margin: 15px 0 0 0; font-size: 11px;">
+                © 2025 UNACH. Todos los derechos reservados.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+      
+      await resend.emails.send({
+        from: process.env.RESEND_FROM || "SGIAA <no-reply@sgiaair.com>",
+        to: correoNormalizado,
+        subject: "✓ Verifica tu Cuenta - SGIAA UNACH",
+        html: emailHtml,
+      });
+
+      return res.status(200).json({ 
+        mensaje: "Usuario creado exitosamente. Se envió un enlace de verificación al correo.",
+        usuario: { nombre: nombreTrimmed, correo: correoNormalizado, rol: rol }
+      });
+
+    } catch (e) {
+      // Si falla el envío, borra el usuario
+      db.query("DELETE FROM usuarios WHERE LOWER(correo) = ?", [correoNormalizado], () => {
+        return res.status(500).json({
+          mensaje: "No se pudo enviar el correo. Intenta nuevamente.",
+          detalle: e.message
+        });
+      });
+    }
+  });
+});
+
+// VERIFICAR POR ENLACE (SIN CÓDIGO, SOLO TOKEN)
+app.get('/api/verificar-enlace/:token', (req, res) => {
+  const { token } = req.params;
+
+  if (!token) {
+    return res.status(400).json({ mensaje: "Token inválido" });
+  }
+
+  // Buscar usuario con ese token
+  db.query("SELECT * FROM usuarios WHERE codigo_verificacion = ?", [token], (err, result) => {
+    if (err) {
+      return res.status(500).json({ mensaje: "Error en verificación", detalle: err.message });
+    }
+
+    if (!result || result.length === 0) {
+      return res.status(400).json({ mensaje: "Token inválido o expirado" });
+    }
+
+    const usuario = result[0];
+
+    // Marcar como verificado
+    db.query("UPDATE usuarios SET es_verificado = 1 WHERE id = ?", [usuario.id], (err2) => {
+      if (err2) {
+        return res.status(500).json({ mensaje: "Error al verificar" });
+      }
+
+      // ✅ Retornar usuario para login automático
+      res.json({
+        mensaje: "¡Cuenta verificada correctamente! Iniciando sesión...",
+        usuario: {
+          id: usuario.id,
+          nombre: usuario.nombre,
+          correo: usuario.correo,
+          rol: usuario.rol,
+          es_verificado: 1
+        }
+      });
+    });
+  });
+});
+
+// RUTA HTML PARA VERIFICAR ENLACE (SOLO REDIRIGE AL DASHBOARD)
+app.get('/verificar-enlace', (req, res) => {
+  const { token } = req.query;
+
+  if (!token) {
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Error de Verificación</title>
+        <style>body { font-family: Arial; text-align: center; padding: 50px; color: #d32f2f; }</style>
+      </head>
+      <body>
+        <h1>Token inválido</h1>
+        <p>El enlace de verificación no es válido o ha expirado.</p>
+        <a href="/login.html">Volver al login</a>
+      </body>
+      </html>
+    `);
+  }
+
+  // Verificar el token en la BD
+  db.query("SELECT * FROM usuarios WHERE codigo_verificacion = ?", [token], (err, result) => {
+    if (err || !result || result.length === 0) {
+      return res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Error de Verificación</title>
+          <style>body { font-family: Arial; text-align: center; padding: 50px; color: #d32f2f; }</style>
+        </head>
+        <body>
+          <h1>Token inválido</h1>
+          <p>El enlace de verificación no es válido o ha expirado.</p>
+          <a href="/login.html">Volver al login</a>
+        </body>
+        </html>
+      `);
+    }
+
+    const usuario = result[0];
+
+    // Marcar como verificado
+    db.query("UPDATE usuarios SET es_verificado = 1 WHERE id = ?", [usuario.id], (err2) => {
+      if (err2) {
+        return res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Error de Verificación</title>
+            <style>body { font-family: Arial; text-align: center; padding: 50px; color: #d32f2f; }</style>
+          </head>
+          <body>
+            <h1>Error en la verificación</h1>
+            <p>Intenta nuevamente más tarde.</p>
+            <a href="/login.html">Volver al login</a>
+          </body>
+          </html>
+        `);
+      }
+
+      // ✅ VERIFICACIÓN EXITOSA - REDIRIGIR AL DASHBOARD CON DATOS DEL USUARIO
+      const usuarioJSON = JSON.stringify(usuario).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+      
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Cuenta Verificada - Iniciando Sesión...</title>
+          <style>
+            body { font-family: Arial; text-align: center; padding: 50px; color: #004d7a; }
+            .success { color: #2e7d32; }
+          </style>
+        </head>
+        <body>
+          <h1 class="success">✓ ¡Cuenta Verificada Correctamente!</h1>
+          <p>Estamos iniciando tu sesión automáticamente...</p>
+          <p>Si no eres redirigido en 3 segundos, <a href="/dashboard.html">haz clic aquí</a>.</p>
+          <script>
+            // Guardar usuario en localStorage y redirigir
+            const usuario = ${usuarioJSON};
+            localStorage.setItem('usuario', JSON.stringify(usuario));
+            setTimeout(() => {
+              window.location.href = '/dashboard.html';
+            }, 2000);
+          </script>
+        </body>
+        </html>
+      `);
+    });
+  });
+});
+
 // ... (resto del código del servidor: login, verificar, etc.) ...
-// REENVIAR CÓDIGO DE VERIFICACIÓN si no llegó el correo original
+// RUTA PARA REENVIAR CÓDIGO DE VERIFICACIÓN si no llegó el correo original
 app.post('/api/reenviar-codigo', (req, res) => {
     const { correo } = req.body;
     
