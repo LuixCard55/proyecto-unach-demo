@@ -218,6 +218,58 @@ Implementar validaciones robustas y normalización consistente de datos.
 
 ---
 
+## 7. CORRECCIONES AL ENDPOINT /api/editar-usuario-admin (Commits 769ce0c - 78fe3c3)
+
+### Objetivo
+Resolver error 500 en el endpoint de edición de usuarios por admin y optimizar el manejo asincrónico.
+
+### Problemas Identificados
+
+**Problema 1: Callback Async Incorrecto (Línea 720)**
+- Error: `db.query()` con callback `async (err) =>` es incompatible
+- Causa: Node.js db callbacks no pueden ser async
+- Síntoma: Error 500 cuando admin intenta editar usuario
+- Línea exacta: `db.query(sql, [...], async (err) => {...})`
+
+**Problema 2: Campo de Base de Datos Insuficiente**
+- Error: `codigo_verificacion VARCHAR(6)` insuficiente para tokens de 64 caracteres
+- Causa: `crypto.randomBytes(32).toString('hex')` genera 64 caracteres
+- Síntoma: MySQL ER_DATA_TOO_LONG error cuando se intenta guardar token
+- Solución: Expandir a `VARCHAR(255)`
+
+### Cambios Específicos
+
+**7.1 Corrección del Callback Asincrónico (server.js:720)**
+- Removido `async` del callback de `db.query()`
+- Email se envía en background con `.catch()` en lugar de `await`
+- Respuesta HTTP se envía inmediatamente sin esperar email
+- Mejora performance y confiabilidad
+
+**7.2 Expansión del Campo de Base de Datos (unach_sgiaa.sql:118)**
+- `codigo_verificacion VARCHAR(6)` → `VARCHAR(255)`
+- Soporta tokens de 64 caracteres y códigos de 6 dígitos
+- Creado script de migración: `migration_011_codigo_verificacion.sql`
+
+### Testing Manual Recomendado
+
+```bash
+# Test 1: Editar estudiante
+POST https://www.sgiaair.com/api/editar-usuario-admin/139
+Content-Type: application/json
+{
+  "nombre": "New Name",
+  "correo": "newemail@unach.edu.ec",
+  "password": "NewPass123"
+}
+# Esperado: 200 OK, email enviado, usuario pendiente
+
+# Test 2: Verificar enlace con token
+GET https://www.sgiaair.com/verificar-enlace?token=<token_64_chars>
+# Esperado: Redirect a dashboard.html, usuario verificado
+```
+
+---
+
 ## Testing de Cambios
 
 Todos los cambios han sido probados en:
@@ -225,19 +277,22 @@ Todos los cambios han sido probados en:
 - Producción (Railway, puerto dinámico)
 - Diferentes navegadores y dispositivos móviles
 - Múltiples casos de error
+- Edición y actualización de usuarios (estudiantes y docentes)
+- Verificación de enlaces con tokens de 64 caracteres
 
 ---
 
 ## Estadísticas
 
-- Total modificaciones: 11 commits principales
-- Líneas de código modificadas: ~400+
-- Endpoints afectados: 4 principales (login, usuarios, verificar, reenviar-codigo)
-- Archivos modificados: 9
-- Variables de entorno nuevas: 2 (PORT, RESEND_API_KEY)
+- Total modificaciones: 13 commits principales
+- Líneas de código modificadas: ~450+
+- Endpoints afectados: 5 principales (login, usuarios, verificar, reenviar-codigo, editar-usuario-admin)
+- Archivos modificados: 11
+- Variables de entorno: 2 (PORT, RESEND_API_KEY)
+- Archivos de migración: 1 (migration_011_codigo_verificacion.sql)
 
 ---
 
 Fecha de documentación: 10 de Febrero de 2026
-Versión de cambios: 1.0
+Versión de cambios: 1.1 (incluye correcciones al endpoint de edición)
 Estado: Todos los cambios implementados y funcionales
