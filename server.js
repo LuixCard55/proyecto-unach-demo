@@ -8,7 +8,7 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // --- 1. CONFIGURACIÓN "TODO TERRENO" ---
 // Esto permite que el servidor encuentre tus HTML donde sea que estén (en 'public' o en la raíz)
@@ -182,4 +182,4 @@ app.get('/api/stats', (req, res) => {
     });
 });
 
-app.listen(PORT, () => console.log(`🚀 SERVIDOR LISTO: http://localhost:${PORT}/login.html`));
+app.listen(PORT, () => console.log(`🚀 Servidor listo en puerto ${PORT}`));
