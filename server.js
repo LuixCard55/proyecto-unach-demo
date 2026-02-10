@@ -108,40 +108,42 @@ app.post('/api/login', (req, res) => {
 
 // REGISTRO (SIN RESTRICCIONES DE DOMINIO)
 app.post('/api/usuarios', (req, res) => {
-    const { nombre, correo, password, rol } = req.body;
+  const { nombre, correo, password, rol } = req.body;
 
-    // Validación básica: Que no falten datos
-    if (!nombre || !correo || !password || !rol) {
-        return res.status(400).json({ mensaje: "Faltan datos obligatorios" });
+  if (!nombre || !correo || !password || !rol) {
+    return res.status(400).json({ mensaje: "Faltan datos obligatorios" });
+  }
+
+  const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+
+  const sql = `
+    INSERT INTO usuarios (nombre, correo, password, rol, codigo_verificacion, es_verificado)
+    VALUES (?, ?, ?, ?, ?, 0)
+  `;
+
+  db.query(sql, [nombre, correo, password, rol, codigo], async (err, result) => {
+    if (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(400).json({ mensaje: "Este correo ya está registrado" });
+      }
+      return res.status(500).json({ mensaje: "Error en base de datos", detalle: err.message });
     }
 
-    // --- ❌ AQUÍ BORRAMOS LA RESTRICCIÓN DE @unach.edu.ec ---
-    // Ya no verificamos el dominio, aceptamos cualquiera.
+    // Intentar enviar correo (si falla, igual registras y respondes)
+    try {
+      await transporter.sendMail({
+        from: `"Sistema SGIAA" <${process.env.EMAIL_USER}>`,
+        to: correo,
+        subject: 'Código de Verificación',
+        html: `<h3>Tu código es: <b style="color:#002a50;">${codigo}</b></h3>`
+      });
+    } catch (e) {
+      console.log("📧 No se pudo enviar correo:", e.message);
+      console.log("📌 Código generado:", codigo);
+    }
 
-    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Guardamos usuario (Sin verificar)
-    const sql = "INSERT INTO usuarios (nombre, correo, password, rol, codigo_verificacion, es_verificado) VALUES (?, ?, ?, ?, ?, 0)";
-    
-    db.query(sql, [nombre, correo, password, rol, codigo], async(err, result) => {
-        if (err) {
-            // Si el correo ya existe, avisamos
-            if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ mensaje: "Este correo ya está registrado" });
-            return res.status(500).json({ mensaje: "Error en base de datos" });
-        }
-
-        // Enviamos el código a CUALQUIER correo (Gmail, Outlook, etc.)
-        try {
-        await transporter.sendMail({
-            from: `"Sistema SGIAA" <${process.env.EMAIL_USER}>`,
-            to: correo,
-            subject: 'Código de Verificación',
-            html: `<h3>Tu código es: <b style="color:#002a50;">${codigo}</b></h3>`
-        });
-        } catch (e) {
-        console.log("📧 NO se pudo enviar correo (Railway bloquea SMTP)");
-        console.log("📌 Código generado:", codigo);
-        };
+    return res.json({ mensaje: "Usuario creado. Revisa tu correo para verificar." });
+  });
 });
 
 // ... (resto del código del servidor: login, verificar, etc.) ...
@@ -212,8 +214,13 @@ app.get('/api/stats', (req, res) => {
 });
 //Se cambio de este modo al listen porque en producción (Railway) no se puede usar un puerto fijo como el 3000, sino que se debe usar el que asigna la plataforma a través de la variable de entorno PORT. De esta forma, el servidor funcionará tanto en desarrollo (usando el puerto 3000) como en producción (usando el puerto asignado por Railway).
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok' });
+  res.status(200).json({ status: 'ok' });
 });
+
+process.on('unhandledRejection', (err) => {
+  console.error('⚠️ unhandledRejection:', err);
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor listo en puerto ${PORT}`);
-})});
+});

@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Malla Curricular | UNACH</title>
         <link rel="icon" type="image/png" href="LOGO_U_FULLCOLOR.png">
 
@@ -9,11 +10,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { background-color: #f8f9fa; }
-        .sidebar { min-height: 100vh; background: #2c3e50; color: white; width: 250px; position: fixed; }
+        * { box-sizing: border-box; }
+        body { background-color: #f8f9fa; margin: 0; padding: 0; }
+        .sidebar { min-height: 100vh; background: #2c3e50; color: white; width: 250px; position: fixed; z-index: 1000; transition: all 0.3s ease; }
         .sidebar a { color: #bdc3c7; text-decoration: none; padding: 15px 20px; display: block; border-left: 4px solid transparent; }
         .sidebar a:hover, .sidebar a.active { background: #34495e; color: #fff; border-left-color: #3498db; }
-        .main-content { margin-left: 250px; padding: 20px; }
+        .main-content { margin-left: 250px; padding: 20px; transition: all 0.3s ease; overflow-x: auto; }
+        .menu-toggle { display: none; position: fixed; top: 10px; left: 10px; z-index: 1001; }
         
         /* Estilo para las cabeceras de los semestres */
         .header-semestre {
@@ -22,6 +25,19 @@
             padding: 10px;
             border-radius: 5px 5px 0 0;
             font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { width: 0; overflow: hidden; }
+            .sidebar.show { width: 250px; }
+            .main-content { margin-left: 0; padding: 10px; }
+            .main-content.shift { margin-left: 250px; }
+            .menu-toggle { display: block; }
+            table { font-size: 0.8rem; }
+        }
+        @media (max-width: 480px) {
+            .main-content { padding: 5px; }
+            table { font-size: 0.7rem; }
         }
     </style>
 </head>
@@ -263,6 +279,6 @@
             });
         });
     </script>
-
+    <script src="responsive.js"></script>
 </body>
 </html>

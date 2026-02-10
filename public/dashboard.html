@@ -9,10 +9,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        * { box-sizing: border-box; }
         body {
             background-color: #f8f9fa; /* Fondo gris claro suave */
             font-family: 'Segoe UI', sans-serif;
             overflow-x: hidden;
+            margin: 0;
+            padding: 0;
         }
         /* --- ESTILOS DE LA BARRA LATERAL (NO TOCAR) --- */
         .sidebar {
@@ -22,7 +25,7 @@
             width: 250px;
             position: fixed;
             transition: all 0.3s;
-            z-index: 100;
+            z-index: 1000;
         }
         .sidebar a {
             color: #bdc3c7;
@@ -39,6 +42,19 @@
         .main-content {
             margin-left: 250px;
             padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .menu-toggle { display: none; position: fixed; top: 10px; left: 10px; z-index: 1001; }
+        
+        @media (max-width: 768px) {
+            .sidebar { width: 0; overflow: hidden; }
+            .sidebar.show { width: 250px; }
+            .main-content { margin-left: 0; padding: 10px; }
+            .main-content.shift { margin-left: 250px; }
+            .menu-toggle { display: block; }
+        }
+        @media (max-width: 480px) {
+            .main-content { padding: 5px; }
         }
 
         /* --- ESTILOS NUEVOS PARA LA INFORMACIÓN --- */
@@ -47,6 +63,7 @@
             margin-bottom: 30px;
             display: flex;       /* Esto ayuda a centrar */
             justify-content: center; /* Esto centra el contenido */
+            flex-wrap: wrap;
         }
         
         .info-card {
@@ -55,18 +72,47 @@
             border-radius: 5px;
             padding: 25px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            max-width: 100%;
+            width: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .info-card {
+                padding: 15px;
+                margin: 10px auto;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .info-card {
+                padding: 10px;
+                margin: 5px auto;
+                width: 95%;
+            }
         }
         
         .info-title {
             color: #343a40;
             font-weight: 600;
             margin-bottom: 20px;
+            font-size: 1.1rem;
         }
 
         .text-info-content {
             color: #6c757d;
             font-size: 0.95rem;
             line-height: 1.6;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        @media (max-width: 480px) {
+            .text-info-content {
+                font-size: 0.85rem;
+            }
+            .info-title {
+                font-size: 0.95rem;
+            }
         }
     </style>
 </head>
@@ -270,6 +316,6 @@
             });
         });
     </script>
-
+    <script src="responsive.js"></script>
 </body>
 </html>

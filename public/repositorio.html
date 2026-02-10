@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Repositorio | UNACH</title>
         <link rel="icon" type="image/png" href="LOGO_U_FULLCOLOR.png">
 
@@ -9,12 +10,25 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { background-color: #f8f9fa; }
-        .sidebar { min-height: 100vh; background: #2c3e50; color: white; width: 250px; position: fixed; }
+        * { box-sizing: border-box; }
+        body { background-color: #f8f9fa; margin: 0; padding: 0; }
+        .sidebar { min-height: 100vh; background: #2c3e50; color: white; width: 250px; position: fixed; z-index: 1000; transition: all 0.3s ease; }
         .sidebar a { color: #bdc3c7; text-decoration: none; padding: 15px 20px; display: block; border-left: 4px solid transparent; }
         .sidebar a:hover, .sidebar a.active { background: #34495e; color: #fff; border-left-color: #3498db; }
-        .main-content { margin-left: 250px; padding: 20px; }
+        .main-content { margin-left: 250px; padding: 20px; transition: all 0.3s ease; }
         .file-icon { font-size: 2rem; color: #dc3545; }
+        .menu-toggle { display: none; position: fixed; top: 10px; left: 10px; z-index: 1001; }
+        
+        @media (max-width: 768px) {
+            .sidebar { width: 0; overflow: hidden; }
+            .sidebar.show { width: 250px; }
+            .main-content { margin-left: 0; padding: 10px; }
+            .main-content.shift { margin-left: 250px; }
+            .menu-toggle { display: block; }
+        }
+        @media (max-width: 480px) {
+            .main-content { padding: 5px; }
+        }
     </style>
 </head>
 <body>
@@ -222,5 +236,6 @@
             cargarRepositorio(); 
         });
     </script>
+    <script src="responsive.js"></script>
 </body>
 </html>
