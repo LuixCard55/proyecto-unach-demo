@@ -25,8 +25,23 @@ process.on('uncaughtException', (err) => {
 });
 
 // --- 2. BASE DE DATOS ---
-// CONFIGURACIÓN PARA PRODUCCIÓN (Railway)
-const db = mysql.createConnection(process.env.MYSQL_URL);
+// En producción, Railway proporciona la URL de conexión a través de una variable de entorno (DATABASE_URL o MYSQL_URL).
+const mysqlUrl =
+  process.env.MYSQL_URL ||
+  process.env.MYSQL_PUBLIC_URL ||
+  process.env.DATABASE_URL;
+
+console.log("MYSQL_URL set?", Boolean(mysqlUrl));
+
+const db = mysqlUrl
+  ? mysql.createConnection(mysqlUrl)
+  : mysql.createConnection({
+      host: process.env.MYSQLHOST,
+      user: process.env.MYSQLUSER,
+      password: process.env.MYSQLPASSWORD,
+      database: process.env.MYSQLDATABASE,
+      port: Number(process.env.MYSQLPORT) || 3306
+    });
 // CONFIGURACIÓN PARA XAMPP (LOCALHOST)
 /*const db = mysql.createConnection({
   host: 'localhost', user: 'root', password: '', database: 'unach_sgiaa'
