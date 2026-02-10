@@ -119,15 +119,82 @@ app.post('/api/usuarios', (req, res) => {
 
     try {
       // ✅ ENVÍO CON RESEND (INTERMEDIARIO)
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Código de Verificación - SGIAA UNACH</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+          <div style="max-width: 600px; margin: 30px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+            <!-- Header con color UNACH -->
+            <div style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); padding: 40px 20px; text-align: center;">
+              <img src="https://unach.edu.ec/wp-content/uploads/2019/06/logo-unach-blanco.png" alt="Logo UNACH" style="max-width: 180px; height: auto; margin-bottom: 15px;">
+              <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">SGIAA - Sistema de Gestión Académica</h1>
+              <p style="color: #b8d4f1; margin: 10px 0 0 0; font-size: 14px;">Universidad Nacional de Chimborazo</p>
+            </div>
+
+            <!-- Contenido principal -->
+            <div style="padding: 40px 30px;">
+              <h2 style="color: #002a50; margin: 0 0 15px 0; font-size: 22px; font-weight: 600;">¡Bienvenido a SGIAA!</h2>
+              <p style="color: #555; line-height: 1.6; margin: 0 0 20px 0; font-size: 15px;">
+                Gracias por registrarte en el Sistema de Gestión Académica de la Universidad Nacional de Chimborazo.
+              </p>
+
+              <p style="color: #555; line-height: 1.6; margin: 0 0 30px 0; font-size: 15px;">
+                Para verificar tu cuenta y completar el proceso de registro, utiliza el siguiente código de 6 dígitos:
+              </p>
+
+              <!-- Código de verificación destacado -->
+              <div style="background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f7 100%); border-left: 4px solid #002a50; padding: 25px; text-align: center; border-radius: 8px; margin: 30px 0;">
+                <p style="color: #002a50; margin: 0 0 10px 0; font-size: 13px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;">Tu código de verificación</p>
+                <div style="background: white; padding: 20px; border-radius: 6px; display: inline-block;">
+                  <span style="color: #002a50; font-size: 48px; font-weight: 700; letter-spacing: 8px; font-family: 'Courier New', monospace;">${codigo}</span>
+                </div>
+                <p style="color: #888; margin: 15px 0 0 0; font-size: 12px;">Este código vence en 24 horas</p>
+              </div>
+
+              <p style="color: #555; line-height: 1.6; margin: 30px 0 20px 0; font-size: 14px;">
+                <strong>¿Cómo verificar tu cuenta?</strong>
+              </p>
+              <ol style="color: #555; line-height: 1.8; margin: 0; padding-left: 20px; font-size: 14px;">
+                <li>Ingresa a la plataforma SGIAA</li>
+                <li>Ve a la sección de Verificación de Cuenta</li>
+                <li>Copia y pega el código anterior</li>
+                <li>¡Listo! Tu cuenta estará verificada</li>
+              </ol>
+
+              <p style="color: #888; line-height: 1.6; margin: 30px 0 0 0; font-size: 13px;">
+                <strong>Importante:</strong> No compartas este código con nadie. UNACH nunca te pedirá tu código de verificación por correo o teléfono.
+              </p>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f5f7fa; padding: 25px 30px; border-top: 1px solid #e0e0e0; text-align: center;">
+              <p style="color: #666; margin: 0 0 10px 0; font-size: 13px;">
+                <strong>Sistema de Gestión Académica</strong><br>
+                Universidad Nacional de Chimborazo
+              </p>
+              <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">
+                Riobamba - Ecuador<br>
+                <a href="https://unach.edu.ec" style="color: #002a50; text-decoration: none;">www.unach.edu.ec</a>
+              </p>
+              <p style="color: #ccc; margin: 15px 0 0 0; font-size: 11px;">
+                © 2025 UNACH. Todos los derechos reservados.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+      
       await resend.emails.send({
-        from: "SGIAA <onboarding@resend.dev>", // puedes cambiar cuando verifiques tu dominio
+        from: "SGIAA <onboarding@resend.dev>",
         to: correo,
-        subject: "Código de verificación",
-        html: `
-          <h3>Verificación de cuenta</h3>
-          <p>Tu código es:</p>
-          <h1 style="letter-spacing:3px">${codigo}</h1>
-        `,
+        subject: "🔐 Código de Verificación - SGIAA UNACH",
+        html: emailHtml,
       });
 
       return res.status(200).json({ mensaje: "Usuario creado. Revisa tu correo para verificar." });
@@ -163,11 +230,72 @@ app.post('/api/usuarios', (req, res) => {
         if (err2) return res.status(500).json({ mensaje: "Error DB", detalle: err2.message });
 
         try {
+            const emailHtml = `
+              <!DOCTYPE html>
+              <html lang="es">
+              <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Reenvío de Código - SGIAA UNACH</title>
+              </head>
+              <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                <div style="max-width: 600px; margin: 30px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                  <!-- Header con color UNACH -->
+                  <div style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); padding: 40px 20px; text-align: center;">
+                    <img src="https://unach.edu.ec/wp-content/uploads/2019/06/logo-unach-blanco.png" alt="Logo UNACH" style="max-width: 180px; height: auto; margin-bottom: 15px;">
+                    <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">SGIAA - Sistema de Gestión Académica</h1>
+                    <p style="color: #b8d4f1; margin: 10px 0 0 0; font-size: 14px;">Universidad Nacional de Chimborazo</p>
+                  </div>
+
+                  <!-- Contenido principal -->
+                  <div style="padding: 40px 30px;">
+                    <h2 style="color: #002a50; margin: 0 0 15px 0; font-size: 22px; font-weight: 600;">Reenvío de Código de Verificación</h2>
+                    <p style="color: #555; line-height: 1.6; margin: 0 0 20px 0; font-size: 15px;">
+                      Hemos generado un nuevo código de verificación para tu cuenta en SGIAA.
+                    </p>
+
+                    <p style="color: #555; line-height: 1.6; margin: 0 0 30px 0; font-size: 15px;">
+                      Utiliza el siguiente código para completar la verificación de tu cuenta:
+                    </p>
+
+                    <!-- Código de verificación destacado -->
+                    <div style="background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f7 100%); border-left: 4px solid #002a50; padding: 25px; text-align: center; border-radius: 8px; margin: 30px 0;">
+                      <p style="color: #002a50; margin: 0 0 10px 0; font-size: 13px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;">Tu nuevo código de verificación</p>
+                      <div style="background: white; padding: 20px; border-radius: 6px; display: inline-block;">
+                        <span style="color: #002a50; font-size: 48px; font-weight: 700; letter-spacing: 8px; font-family: 'Courier New', monospace;">${nuevoCodigo}</span>
+                      </div>
+                      <p style="color: #888; margin: 15px 0 0 0; font-size: 12px;">Este código vence en 24 horas</p>
+                    </div>
+
+                    <p style="color: #555; line-height: 1.6; margin: 30px 0 0 0; font-size: 14px;">
+                      <strong>⚠️ Recuerda:</strong> Si no solicitaste este código, puedes ignorar este correo. Tu cuenta permanecerá segura.
+                    </p>
+                  </div>
+
+                  <!-- Footer -->
+                  <div style="background: #f5f7fa; padding: 25px 30px; border-top: 1px solid #e0e0e0; text-align: center;">
+                    <p style="color: #666; margin: 0 0 10px 0; font-size: 13px;">
+                      <strong>Sistema de Gestión Académica</strong><br>
+                      Universidad Nacional de Chimborazo
+                    </p>
+                    <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">
+                      Riobamba - Ecuador<br>
+                      <a href="https://unach.edu.ec" style="color: #002a50; text-decoration: none;">www.unach.edu.ec</a>
+                    </p>
+                    <p style="color: #ccc; margin: 15px 0 0 0; font-size: 11px;">
+                      © 2025 UNACH. Todos los derechos reservados.
+                    </p>
+                  </div>
+                </div>
+              </body>
+              </html>
+            `;
+            
             await resend.emails.send({
             from: process.env.RESEND_FROM || "SGIAA <onboarding@resend.dev>",
             to: correo,
-            subject: "Reenvío de código de verificación",
-            html: `<h3>Tu nuevo código es:</h3><h1 style="letter-spacing:3px; color:#002a50">${nuevoCodigo}</h1>`,
+            subject: "🔄 Reenvío de Código de Verificación - SGIAA UNACH",
+            html: emailHtml,
             });
 
             return res.json({ mensaje: "Código reenviado. Revisa tu correo (y Spam)." });
