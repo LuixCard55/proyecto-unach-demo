@@ -4,7 +4,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const fs = require('fs');
-const nodemailer = require('nodemailer');
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
 const path = require('path');
 // Evitar problemas de IPv6 en algunos entornos (como Railway)
 const dns = require("dns");
@@ -68,19 +69,6 @@ const upload = multer({ storage: storage });
 // --- 4. CORREO (PON TUS DATOS AQUÍ) ---
 // Para producción, es mejor usar variables de entorno para el correo también, así no expones tu contraseña en el código.
 // Asegúrate de crear un "App Password" en tu cuenta de Gmail si usas autenticación de dos factores, y usa ese password aquí.
-// EJEMPLO DE VARIABLES DE ENTORNO PARA CORREO:
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // 587 = STARTTLS (no secure directo)
-  auth: {
-    user: process.env.EMAIL_USER, 
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-});
 
 // ================= RUTAS =================
 
@@ -121,38 +109,74 @@ app.post('/api/usuarios', (req, res) => {
     VALUES (?, ?, ?, ?, ?, 0)
   `;
 
-  db.query(sql, [nombre, correo, password, rol, codigo], async (err, result) => {
+  db.query(sql, [nombre, correo, password, rol, codigo], async (err) => {
     if (err) {
-      console.log("❌ Error en registro:", err.code, err.message);
       if (err.code === 'ER_DUP_ENTRY') {
         return res.status(400).json({ mensaje: "Este correo ya está registrado" });
       }
       return res.status(500).json({ mensaje: "Error en base de datos", detalle: err.message });
     }
 
-    console.log("✅ Usuario insertado:", correo);
-    console.log("📌 Código de verificación:", codigo);
-
-    // Intentar enviar correo (si falla, igual registras y respondes)
     try {
-      await transporter.sendMail({
-        from: `"Sistema SGIAA" <${process.env.EMAIL_USER}>`,
+      // ✅ ENVÍO CON RESEND (INTERMEDIARIO)
+      await resend.emails.send({
+        from: "SGIAA <onboarding@resend.dev>", // puedes cambiar cuando verifiques tu dominio
         to: correo,
-        subject: 'Código de Verificación',
-        html: `<h3>Tu código es: <b style="color:#002a50;">${codigo}</b></h3>`
+        subject: "Código de verificación",
+        html: `
+          <h3>Verificación de cuenta</h3>
+          <p>Tu código es:</p>
+          <h1 style="letter-spacing:3px">${codigo}</h1>
+        `,
       });
-      console.log("📧 Correo enviado exitosamente a:", correo);
-    } catch (e) {
-      console.log("📧 No se pudo enviar correo:", e.message);
-      console.log("📌 Pero el usuario se registró. Código:", codigo);
-    }
 
-    return res.status(200).json({ mensaje: "Usuario creado. Revisa tu correo para verificar." });
+      return res.status(200).json({ mensaje: "Usuario creado. Revisa tu correo para verificar." });
+
+    } catch (e) {
+      // ❌ si falla el envío, borra el usuario para que pueda reintentar
+      db.query("DELETE FROM usuarios WHERE correo = ?", [correo], () => {
+        return res.status(500).json({
+          mensaje: "No se pudo enviar el correo de verificación. Intenta nuevamente.",
+          detalle: e.message
+        });
+      });
+    }
   });
 });
 
 // ... (resto del código del servidor: login, verificar, etc.) ...
+// REENVIAR CÓDIGO DE VERIFICACIÓN si no llegó el correo original
+    app.post('/api/reenviar-codigo', (req, res) => {
+    const { correo } = req.body;
+    if (!correo) return res.status(400).json({ mensaje: "Falta correo" });
 
+    db.query("SELECT * FROM usuarios WHERE correo = ?", [correo], async (err, r) => {
+        if (err) return res.status(500).json({ mensaje: "Error DB", detalle: err.message });
+        if (!r || r.length === 0) return res.status(404).json({ mensaje: "No existe ese correo" });
+
+        const u = r[0];
+        if (u.es_verificado === 1) return res.status(400).json({ mensaje: "La cuenta ya está verificada" });
+
+        const nuevoCodigo = Math.floor(100000 + Math.random() * 900000).toString();
+
+        db.query("UPDATE usuarios SET codigo_verificacion = ? WHERE correo = ?", [nuevoCodigo, correo], async (err2) => {
+        if (err2) return res.status(500).json({ mensaje: "Error DB", detalle: err2.message });
+
+        try {
+            await resend.emails.send({
+            from: process.env.RESEND_FROM || "SGIAA <onboarding@resend.dev>",
+            to: correo,
+            subject: "Reenvío de código de verificación",
+            html: `<h3>Tu nuevo código es:</h3><h1 style="letter-spacing:3px; color:#002a50">${nuevoCodigo}</h1>`,
+            });
+
+            return res.json({ mensaje: "Código reenviado. Revisa tu correo (y Spam)." });
+        } catch (e) {
+            return res.status(500).json({ mensaje: "No se pudo reenviar el correo", detalle: e.message });
+        }
+        });
+    });
+    });
 // VERIFICAR
 app.post('/api/verificar', (req, res) => {
     const { correo, codigo } = req.body;

@@ -84,6 +84,10 @@
                         <div class="alert alert-info py-2 small">Revisa tu bandeja de entrada (o Spam).</div>
                         <input type="text" id="input_codigo" class="form-control text-center mb-3 fs-4" placeholder="CÓDIGO" maxlength="6">
                         <button type="button" class="btn btn-warning w-100 fw-bold" onclick="verificarCodigo()">VERIFICAR</button>
+                          <!-- ✅ NUEVO BOTÓN -->
+                        <button type="button" class="btn btn-outline-secondary w-100 mt-2" onclick="reenviarCodigo()">
+                            REENVIAR CÓDIGO
+                        </button>
                     </div>
                 </div>
             </div>
@@ -92,8 +96,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let correoPendiente = "";
-
+        let correoPendiente = localStorage.getItem("correoPendiente") || "";
         async function hacerLogin() {
             const correo = document.getElementById('log_correo').value;
             const password = document.getElementById('log_pass').value;
@@ -158,10 +161,12 @@
                     document.getElementById('form-registro').style.display = 'none';
                     document.getElementById('seccion-verificacion').style.display = 'block';
                     correoPendiente = datos.correo;
+                    localStorage.setItem("correoPendiente", correoPendiente);
                     alert("¡Código enviado! Revisa tu correo (incluso carpeta Spam)");
                 } else {
                     console.log('❌ Error en registro:', data.mensaje);
                     alert("Error: " + (data.mensaje || 'No se pudo registrar'));
+                    localStorage.removeItem("correoPendiente");
                 }
             } catch (error) { 
                 console.error('⚠️ Error de conexión:', error);
@@ -200,6 +205,25 @@
             } catch (error) { 
                 console.error('⚠️ Error de conexión:', error);
                 alert("Error de conexión: " + error.message); 
+            }
+        }
+        async function reenviarCodigo() {
+            if (!correoPendiente) {
+                alert("Primero registra tu correo.");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/reenviar-codigo', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ correo: correoPendiente })
+                });
+
+                const data = await res.json();
+                alert(data.mensaje || "Código reenviado. Revisa tu correo (y Spam).");
+            } catch (error) {
+                alert("Error de conexión al reenviar: " + error.message);
             }
         }
     </script>
