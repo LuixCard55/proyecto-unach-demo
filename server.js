@@ -6,7 +6,9 @@ const multer = require('multer');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
 const path = require('path');
-
+// Evitar problemas de IPv6 en algunos entornos (como Railway)
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first");
 const app = express();
 // Puerto de escucha (usa variable de entorno o 3000)
 const PORT = process.env.PORT || 3000;
@@ -64,12 +66,20 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // --- 4. CORREO (PON TUS DATOS AQUÍ) ---
+// Para producción, es mejor usar variables de entorno para el correo también, así no expones tu contraseña en el código.
+// Asegúrate de crear un "App Password" en tu cuenta de Gmail si usas autenticación de dos factores, y usa ese password aquí.
+// EJEMPLO DE VARIABLES DE ENTORNO PARA CORREO:
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: 'kr123330@gmail.com',  // <--- ¡CAMBIA ESTO!
-        pass: 'nvvofahnvxlbfezr'              // <--- ¡CAMBIA ESTO!
-    }
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // 587 = STARTTLS (no secure directo)
+  auth: {
+    user: process.env.EMAIL_USER, 
+    pass: process.env.EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
 // ================= RUTAS =================
@@ -113,7 +123,7 @@ app.post('/api/usuarios', (req, res) => {
     // Guardamos usuario (Sin verificar)
     const sql = "INSERT INTO usuarios (nombre, correo, password, rol, codigo_verificacion, es_verificado) VALUES (?, ?, ?, ?, ?, 0)";
     
-    db.query(sql, [nombre, correo, password, rol, codigo], (err, result) => {
+    db.query(sql, [nombre, correo, password, rol, codigo], async(err, result) => {
         if (err) {
             // Si el correo ya existe, avisamos
             if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ mensaje: "Este correo ya está registrado" });
@@ -121,17 +131,17 @@ app.post('/api/usuarios', (req, res) => {
         }
 
         // Enviamos el código a CUALQUIER correo (Gmail, Outlook, etc.)
-        transporter.sendMail({
-            from: 'Sistema SGIAA',
+        try {
+        await transporter.sendMail({
+            from: `"Sistema SGIAA" <${process.env.EMAIL_USER}>`,
             to: correo,
             subject: 'Código de Verificación',
             html: `<h3>Tu código es: <b style="color:#002a50;">${codigo}</b></h3>`
-        }, (error) => {
-            if(error) console.log("Error enviando correo: " + error.message);
         });
-        
-        res.json({ mensaje: "Código enviado", requiereVerificacion: true, correo });
-    });
+        } catch (e) {
+        console.log("📧 NO se pudo enviar correo (Railway bloquea SMTP)");
+        console.log("📌 Código generado:", codigo);
+        };
 });
 
 // ... (resto del código del servidor: login, verificar, etc.) ...
@@ -206,4 +216,4 @@ app.get('/health', (req, res) => {
 });
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor listo en puerto ${PORT}`);
-});
+})});
