@@ -131,7 +131,7 @@ app.post('/api/usuarios', (req, res) => {
           <div style="max-width: 600px; margin: 30px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
             <!-- Header con color UNACH -->
             <div style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); padding: 40px 20px; text-align: center;">
-              <img src="https://unach.edu.ec/wp-content/uploads/2019/06/logo-unach-blanco.png" alt="Logo UNACH" style="max-width: 180px; height: auto; margin-bottom: 15px;">
+              <img src="https://www.unach.edu.ec/wp-content/uploads/2021/03/logo_unach_2021-02.png" alt="Logo UNACH" style="max-width: 180px; height: auto; margin-bottom: 15px;">
               <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">SGIAA - Sistema de Gestión Académica</h1>
               <p style="color: #b8d4f1; margin: 10px 0 0 0; font-size: 14px;">Universidad Nacional de Chimborazo</p>
             </div>
@@ -179,7 +179,7 @@ app.post('/api/usuarios', (req, res) => {
               </p>
               <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">
                 Riobamba - Ecuador<br>
-                <a href="https://unach.edu.ec" style="color: #002a50; text-decoration: none;">www.unach.edu.ec</a>
+                <a href="https://www.unach.edu.ec/" style="color: #002a50; text-decoration: none;">www.unach.edu.ec</a>
               </p>
               <p style="color: #ccc; margin: 15px 0 0 0; font-size: 11px;">
                 © 2025 UNACH. Todos los derechos reservados.
