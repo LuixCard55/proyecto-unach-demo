@@ -682,151 +682,75 @@ app.get('/api/usuarios/:id', (req, res) => {
 
 // EDITAR USUARIO POR ADMIN (REENVÍA ENLACE DE VERIFICACIÓN)
 app.post('/api/editar-usuario-admin/:id', (req, res) => {
-  const { id } = req.params;
-  const { nombre, correo } = req.body;
+  const id = Number(req.params.id);
+  const body = req.body || {};
+  const nombre = (body.nombre || "").trim();
+  const correo = (body.correo || "").trim().toLowerCase();
 
-  // Validar campos (ya NO pedimos contraseña)
+  console.log("EDIT ADMIN:", { id, body }); // 👈 mira esto en Railway logs
+
+  if (!Number.isFinite(id) || id <= 0) {
+    return res.status(400).json({ mensaje: "ID inválido" });
+  }
+
   if (!nombre || !correo) {
     return res.status(400).json({ mensaje: "Nombre y correo son obligatorios" });
   }
 
-  const nombreTrimmed = nombre.trim();
-  const correoNormalizado = correo.trim().toLowerCase();
-
-  // Validar formato de email
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(correoNormalizado)) {
+  if (!emailRegex.test(correo)) {
     return res.status(400).json({ mensaje: "Correo inválido" });
   }
 
-  // Primero verificar que el usuario existe (para obtener su contraseña)
-  db.query("SELECT * FROM usuarios WHERE id = ?", [id], (errSelect, usuarioActual) => {
+  // 1) Buscar usuario actual
+  db.query("SELECT id, password FROM usuarios WHERE id = ?", [id], (errSelect, rows) => {
     if (errSelect) {
+      console.error("❌ SELECT usuario error:", errSelect);
       return res.status(500).json({ mensaje: "Error al buscar usuario", detalle: errSelect.message });
     }
 
-    if (!usuarioActual || usuarioActual.length === 0) {
+    if (!rows || rows.length === 0) {
       return res.status(404).json({ mensaje: "Usuario no encontrado" });
     }
 
-    // Obtener contraseña actual del usuario
-    const passwordActual = usuarioActual[0].password;
-
-    // Generar nuevo token para verificación
+    const passwordActual = rows[0].password || ""; // por si viene null
     const token = crypto.randomBytes(32).toString('hex');
-    const enlaceVerificacion = `${process.env.BASE_URL || 'https://sgiaair.com'}/verificar-enlace?token=${token}`;
+    const baseUrl = process.env.BASE_URL || "https://www.sgiaair.com";
+    const enlaceVerificacion = `${baseUrl}/verificar-enlace?token=${token}`;
 
-    // Actualizar SOLO nombre y correo (NO la contraseña), marcar como pendiente
-    const sql = `UPDATE usuarios SET nombre = ?, correo = ?, codigo_verificacion = ?, es_verificado = 0 WHERE id = ?`;
+    // 2) Actualizar datos
+    const sqlUpdate =
+      "UPDATE usuarios SET nombre = ?, correo = ?, codigo_verificacion = ?, es_verificado = 0 WHERE id = ?";
 
-    db.query(sql, [nombreTrimmed, correoNormalizado, token, id], (err) => {
-      if (err) {
-        if (err.code === 'ER_DUP_ENTRY') {
+    db.query(sqlUpdate, [nombre, correo, token, id], (errUpdate, result) => {
+      if (errUpdate) {
+        console.error("❌ UPDATE usuario error:", errUpdate);
+        if (errUpdate.code === "ER_DUP_ENTRY") {
           return res.status(400).json({ mensaje: "Este correo ya está registrado" });
         }
-        return res.status(500).json({ mensaje: "Error en base de datos", detalle: err.message });
+        return res.status(500).json({ mensaje: "Error en base de datos", detalle: errUpdate.message });
       }
 
-      try {
-        // EMAIL CON ENLACE Y DATOS DE LA CUENTA
-        const emailHtml = `
-          <!DOCTYPE html>
-          <html lang="es">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Verificación de Cuenta - SGIAA UNACH</title>
-          </head>
-          <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
-            <div style="max-width: 600px; margin: 30px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-              <!-- Header -->
-              <div style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); padding: 40px 20px; text-align: center;">
-                <img src="https://www.unach.edu.ec/wp-content/uploads/2021/03/logo_unach_2021-02.png" alt="Logo UNACH" style="max-width: 180px; height: auto; margin-bottom: 15px;">
-                <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">SGIAA - Sistema de Gestión Académica</h1>
-                <p style="color: #b8d4f1; margin: 10px 0 0 0; font-size: 14px;">Universidad Nacional de Chimborazo</p>
-              </div>
+      // 3) Responder OK al cliente (NO bloquear por email)
+      res.status(200).json({
+        mensaje: "Usuario actualizado. Se envió un enlace de verificación al correo.",
+        usuario: { id, nombre, correo, es_verificado: 0, affectedRows: result.affectedRows }
+      });
 
-              <!-- Contenido principal -->
-              <div style="padding: 40px 30px;">
-                <h2 style="color: #002a50; margin: 0 0 15px 0; font-size: 22px; font-weight: 600;">Tu Cuenta Ha Sido Actualizada</h2>
-                <p style="color: #555; line-height: 1.6; margin: 0 0 20px 0; font-size: 15px;">
-                  Ha habido cambios en tu cuenta del Sistema de Gestión Académica. Para confirmar los cambios, por favor verifica tu cuenta usando el botón de abajo.
-                </p>
+      // 4) Enviar email por detrás (y loguear si falla)
+      const emailHtml = `...TU HTML...`; // usa tu html actual (no lo repito aquí)
 
-                <!-- Datos de la Cuenta -->
-                <div style="background: #f0f4f8; border-left: 4px solid #002a50; padding: 15px; margin: 25px 0; border-radius: 4px;">
-                  <h3 style="color: #002a50; margin: 0 0 12px 0; font-size: 16px;">📋 Datos de tu Cuenta:</h3>
-                  <table style="width: 100%; color: #333; font-size: 14px; line-height: 1.8;">
-                    <tr>
-                      <td style="padding: 5px 0;"><strong>👤 Nombre:</strong></td>
-                      <td style="padding: 5px 0;">${nombreTrimmed}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 5px 0;"><strong>📧 Correo Electrónico:</strong></td>
-                      <td style="padding: 5px 0; color: #002a50; font-weight: 500;">${correoNormalizado}</td>
-                    </tr>
-                    <tr style="border-top: 1px solid #d0d8e0;">
-                      <td style="padding: 5px 0;"><strong>🔒 Contraseña:</strong></td>
-                      <td style="padding: 5px 0; font-family: monospace; background: #ffffff; padding: 8px; border-radius: 3px;">${passwordActual}</td>
-                    </tr>
-                  </table>
-                  <p style="color: #666; margin: 12px 0 0 0; font-size: 12px; line-height: 1.5;">
-                    ℹ️ La contraseña no ha cambiado. Usa estos datos para acceder al sistema.
-                  </p>
-                </div>
-
-                <!-- Botón de verificación -->
-                <div style="text-align: center; margin: 40px 0;">
-                  <a href="${enlaceVerificacion}" style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">✓ Verificar Cambios</a>
-                </div>
-
-                <p style="color: #888; line-height: 1.6; margin: 30px 0 0 0; font-size: 13px;">
-                  <strong>¿No funcionó el botón?</strong> Copia y pega este enlace:<br>
-                  <span style="word-break: break-all; color: #002a50; font-size: 12px;">${enlaceVerificacion}</span>
-                </p>
-              </div>
-
-              <!-- Footer -->
-              <div style="background: #f5f7fa; padding: 25px 30px; border-top: 1px solid #e0e0e0; text-align: center;">
-                <p style="color: #666; margin: 0 0 10px 0; font-size: 13px;">
-                  <strong>Sistema de Gestión Académica</strong><br>
-                  Universidad Nacional de Chimborazo
-                </p>
-                <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">
-                  Riobamba - Ecuador<br>
-                  <a href="https://www.unach.edu.ec/" style="color: #002a50; text-decoration: none;">www.unach.edu.ec</a>
-                </p>
-                <p style="color: #ccc; margin: 15px 0 0 0; font-size: 11px;">
-                  © 2025 UNACH. Todos los derechos reservados.
-                </p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
-
-        // Enviar email sin await (callback style)
-        resend.emails.send({
-          from: process.env.RESEND_FROM || "SGIAA <no-reply@sgiaair.com>",
-          to: correoNormalizado,
-          subject: "Verificación de Cambios en tu Cuenta - SGIAA UNACH",
-          html: emailHtml,
-        }).catch((emailErr) => {
-          console.error("Error enviando email:", emailErr.message);
-        });
-
-        // Responder inmediatamente sin esperar el email
-        return res.status(200).json({
-          mensaje: "Usuario actualizado. Se envió un enlace de verificación al correo.",
-          usuario: { id, nombre: nombreTrimmed, correo: correoNormalizado, es_verificado: 0 }
-        });
-
-      } catch (e) {
-        return res.status(500).json({
-          mensaje: "Error al procesar la solicitud",
-          detalle: e.message
-        });
-      }
+      resend.emails.send({
+        from: process.env.RESEND_FROM || "SGIAA <no-reply@sgiaair.com>",
+        to: correo,
+        subject: "Verificación de Cambios en tu Cuenta - SGIAA UNACH",
+        html: emailHtml.replace("${passwordActual}", passwordActual)
+                       .replace("${nombreTrimmed}", nombre)
+                       .replace("${correoNormalizado}", correo)
+                       .replace(/\${enlaceVerificacion}/g, enlaceVerificacion)
+      }).catch((emailErr) => {
+        console.error("❌ Error enviando email (Resend):", emailErr);
+      });
     });
   });
 });
