@@ -683,20 +683,17 @@ app.get('/api/usuarios/:id', (req, res) => {
 // EDITAR USUARIO POR ADMIN (REENVÍA ENLACE DE VERIFICACIÓN)
 app.post('/api/editar-usuario-admin/:id', (req, res) => {
   const id = Number(req.params.id);
-  const body = req.body || {};
-  const nombre = (body.nombre || "").trim();
-  const correo = (body.correo || "").trim().toLowerCase();
+  const nombre = (req.body?.nombre || "").trim();
+  const correo = (req.body?.correo || "").trim().toLowerCase();
 
-  console.log("EDIT ADMIN:", { id, body }); // 👈 mira esto en Railway logs
+  console.log("EDIT ADMIN:", { id, nombre, correo });
 
   if (!Number.isFinite(id) || id <= 0) {
     return res.status(400).json({ mensaje: "ID inválido" });
   }
-
   if (!nombre || !correo) {
     return res.status(400).json({ mensaje: "Nombre y correo son obligatorios" });
   }
-
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(correo)) {
     return res.status(400).json({ mensaje: "Correo inválido" });
@@ -708,17 +705,16 @@ app.post('/api/editar-usuario-admin/:id', (req, res) => {
       console.error("❌ SELECT usuario error:", errSelect);
       return res.status(500).json({ mensaje: "Error al buscar usuario", detalle: errSelect.message });
     }
-
     if (!rows || rows.length === 0) {
       return res.status(404).json({ mensaje: "Usuario no encontrado" });
     }
 
-    const passwordActual = rows[0].password || ""; // por si viene null
-    const token = crypto.randomBytes(32).toString('hex');
-    const baseUrl = process.env.BASE_URL || "https://www.sgiaair.com";
+    const passwordActual = rows[0].password || "";
+    const token = crypto.randomBytes(32).toString("hex");
+    const baseUrl = (process.env.BASE_URL || "https://www.sgiaair.com").replace(/\/$/, "");
     const enlaceVerificacion = `${baseUrl}/verificar-enlace?token=${token}`;
 
-    // 2) Actualizar datos
+    // 2) Actualizar usuario
     const sqlUpdate =
       "UPDATE usuarios SET nombre = ?, correo = ?, codigo_verificacion = ?, es_verificado = 0 WHERE id = ?";
 
@@ -731,101 +727,76 @@ app.post('/api/editar-usuario-admin/:id', (req, res) => {
         return res.status(500).json({ mensaje: "Error en base de datos", detalle: errUpdate.message });
       }
 
-      // 3) Responder OK al cliente (NO bloquear por email)
+      // 3) Responder OK al cliente (sin bloquear por email)
       res.status(200).json({
         mensaje: "Usuario actualizado. Se envió un enlace de verificación al correo.",
         usuario: { id, nombre, correo, es_verificado: 0, affectedRows: result.affectedRows }
       });
 
-      // 4) Enviar email por detrás (y loguear si falla)
-        // EMAIL CON ENLACE Y DATOS DE LA CUENTA
-        const emailHtml = `
-          <!DOCTYPE html>
-          <html lang="es">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Verificación de Cuenta - SGIAA UNACH</title>
-          </head>
-          <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
-            <div style="max-width: 600px; margin: 30px auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-              <!-- Header -->
-              <div style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); padding: 40px 20px; text-align: center;">
-                <img src="https://www.unach.edu.ec/wp-content/uploads/2021/03/logo_unach_2021-02.png" alt="Logo UNACH" style="max-width: 180px; height: auto; margin-bottom: 15px;">
-                <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 600;">SGIAA - Sistema de Gestión Académica</h1>
-                <p style="color: #b8d4f1; margin: 10px 0 0 0; font-size: 14px;">Universidad Nacional de Chimborazo</p>
-              </div>
-
-              <!-- Contenido principal -->
-              <div style="padding: 40px 30px;">
-                <h2 style="color: #002a50; margin: 0 0 15px 0; font-size: 22px; font-weight: 600;">Tu Cuenta Ha Sido Actualizada</h2>
-                <p style="color: #555; line-height: 1.6; margin: 0 0 20px 0; font-size: 15px;">
-                  Ha habido cambios en tu cuenta del Sistema de Gestión Académica. Para confirmar los cambios, por favor verifica tu cuenta usando el botón de abajo.
-                </p>
-
-                <!-- Datos de la Cuenta -->
-                <div style="background: #f0f4f8; border-left: 4px solid #002a50; padding: 15px; margin: 25px 0; border-radius: 4px;">
-                  <h3 style="color: #002a50; margin: 0 0 12px 0; font-size: 16px;">📋 Datos de tu Cuenta:</h3>
-                  <table style="width: 100%; color: #333; font-size: 14px; line-height: 1.8;">
-                    <tr>
-                      <td style="padding: 5px 0;"><strong>👤 Nombre:</strong></td>
-                      <td style="padding: 5px 0;">${nombreTrimmed}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 5px 0;"><strong>📧 Correo Electrónico:</strong></td>
-                      <td style="padding: 5px 0; color: #002a50; font-weight: 500;">${correoNormalizado}</td>
-                    </tr>
-                    <tr style="border-top: 1px solid #d0d8e0;">
-                      <td style="padding: 5px 0;"><strong>🔒 Contraseña:</strong></td>
-                      <td style="padding: 5px 0; font-family: monospace; background: #ffffff; padding: 8px; border-radius: 3px;">${passwordActual}</td>
-                    </tr>
-                  </table>
-                  <p style="color: #666; margin: 12px 0 0 0; font-size: 12px; line-height: 1.5;">
-                    ℹ️ La contraseña no ha cambiado. Usa estos datos para acceder al sistema.
-                  </p>
-                </div>
-
-                <!-- Botón de verificación -->
-                <div style="text-align: center; margin: 40px 0;">
-                  <a href="${enlaceVerificacion}" style="background: linear-gradient(135deg, #002a50 0%, #004d7a 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 16px;">✓ Verificar Cambios</a>
-                </div>
-
-                <p style="color: #888; line-height: 1.6; margin: 30px 0 0 0; font-size: 13px;">
-                  <strong>¿No funcionó el botón?</strong> Copia y pega este enlace:<br>
-                  <span style="word-break: break-all; color: #002a50; font-size: 12px;">${enlaceVerificacion}</span>
-                </p>
-              </div>
-
-              <!-- Footer -->
-              <div style="background: #f5f7fa; padding: 25px 30px; border-top: 1px solid #e0e0e0; text-align: center;">
-                <p style="color: #666; margin: 0 0 10px 0; font-size: 13px;">
-                  <strong>Sistema de Gestión Académica</strong><br>
-                  Universidad Nacional de Chimborazo
-                </p>
-                <p style="color: #999; margin: 10px 0 0 0; font-size: 12px;">
-                  Riobamba - Ecuador<br>
-                  <a href="https://www.unach.edu.ec/" style="color: #002a50; text-decoration: none;">www.unach.edu.ec</a>
-                </p>
-                <p style="color: #ccc; margin: 15px 0 0 0; font-size: 11px;">
-                  © 2025 UNACH. Todos los derechos reservados.
-                </p>
-              </div>
+      // 4) Enviar email (async)
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>Verificación de Cambios - SGIAA UNACH</title>
+        </head>
+        <body style="margin:0; padding:0; font-family: Arial, sans-serif; background:#f5f7fa;">
+          <div style="max-width:600px; margin:30px auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+            <div style="background:#002a50; padding:28px 20px; text-align:center;">
+              <img src="https://www.unach.edu.ec/wp-content/uploads/2021/03/logo_unach_2021-02.png" alt="Logo UNACH" style="max-width:180px; height:auto; margin-bottom:10px;" />
+              <h1 style="color:#fff; margin:0; font-size:20px;">SGIAA - Sistema de Gestión Académica</h1>
+              <p style="color:#b8d4f1; margin:8px 0 0; font-size:13px;">Universidad Nacional de Chimborazo</p>
             </div>
-          </body>
-          </html>
-        `; // usa tu html actual (no lo repito aquí)
 
-      resend.emails.send({
-        from: process.env.RESEND_FROM || "SGIAA <no-reply@sgiaair.com>",
-        to: correo,
-        subject: "Verificación de Cambios en tu Cuenta - SGIAA UNACH",
-        html: emailHtml.replace("${passwordActual}", passwordActual)
-                       .replace("${nombreTrimmed}", nombre)
-                       .replace("${correoNormalizado}", correo)
-                       .replace(/\${enlaceVerificacion}/g, enlaceVerificacion)
-      }).catch((emailErr) => {
-        console.error("❌ Error enviando email (Resend):", emailErr);
-      });
+            <div style="padding:28px 24px;">
+              <h2 style="color:#002a50; margin:0 0 12px; font-size:18px;">Verificación de cambios en tu cuenta</h2>
+              <p style="color:#444; line-height:1.6; margin:0 0 14px; font-size:14px;">
+                Hola <strong>${nombre}</strong>, se actualizaron datos de tu cuenta. Para confirmar los cambios, verifica tu cuenta:
+              </p>
+
+              <div style="background:#f0f4f8; border-left:4px solid #002a50; padding:14px; border-radius:6px; margin:18px 0;">
+                <p style="margin:0 0 8px; color:#002a50; font-weight:bold;">📋 Datos de tu cuenta</p>
+                <p style="margin:0; color:#333; font-size:13px; line-height:1.7;">
+                  <strong>Correo:</strong> ${correo}<br/>
+                  <strong>Contraseña:</strong> ${passwordActual}<br/>
+                  <span style="color:#666; font-size:12px;">(La contraseña no ha cambiado)</span>
+                </p>
+              </div>
+
+              <div style="text-align:center; margin:22px 0;">
+                <a href="${enlaceVerificacion}"
+                   style="background:#002a50; color:#fff; padding:12px 22px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block;">
+                  ✓ Verificar cambios
+                </a>
+              </div>
+
+              <p style="color:#777; font-size:12px; line-height:1.5; margin:18px 0 0;">
+                Si no funciona el botón, copia y pega este enlace:<br/>
+                <span style="word-break:break-all; color:#002a50;">${enlaceVerificacion}</span>
+              </p>
+            </div>
+
+            <div style="background:#f5f7fa; padding:16px 20px; text-align:center; border-top:1px solid #e0e0e0;">
+              <p style="margin:0; color:#666; font-size:12px;">
+                © 2026 UNACH - SGIAA. Todos los derechos reservados.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      resend.emails
+        .send({
+          from: process.env.RESEND_FROM || "SGIAA <no-reply@sgiaair.com>",
+          to: correo,
+          subject: "Verificación de Cambios en tu Cuenta - SGIAA UNACH",
+          html: emailHtml
+        })
+        .then(() => console.log("✅ Email enviado a", correo))
+        .catch((emailErr) => console.error("❌ Error enviando email (Resend):", emailErr));
     });
   });
 });
