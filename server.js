@@ -123,11 +123,15 @@ app.post('/api/usuarios', (req, res) => {
 
   db.query(sql, [nombre, correo, password, rol, codigo], async (err, result) => {
     if (err) {
+      console.log("❌ Error en registro:", err.code, err.message);
       if (err.code === 'ER_DUP_ENTRY') {
         return res.status(400).json({ mensaje: "Este correo ya está registrado" });
       }
       return res.status(500).json({ mensaje: "Error en base de datos", detalle: err.message });
     }
+
+    console.log("✅ Usuario insertado:", correo);
+    console.log("📌 Código de verificación:", codigo);
 
     // Intentar enviar correo (si falla, igual registras y respondes)
     try {
@@ -137,12 +141,13 @@ app.post('/api/usuarios', (req, res) => {
         subject: 'Código de Verificación',
         html: `<h3>Tu código es: <b style="color:#002a50;">${codigo}</b></h3>`
       });
+      console.log("📧 Correo enviado exitosamente a:", correo);
     } catch (e) {
       console.log("📧 No se pudo enviar correo:", e.message);
-      console.log("📌 Código generado:", codigo);
+      console.log("📌 Pero el usuario se registró. Código:", codigo);
     }
 
-    return res.json({ mensaje: "Usuario creado. Revisa tu correo para verificar." });
+    return res.status(200).json({ mensaje: "Usuario creado. Revisa tu correo para verificar." });
   });
 });
 
@@ -151,9 +156,28 @@ app.post('/api/usuarios', (req, res) => {
 // VERIFICAR
 app.post('/api/verificar', (req, res) => {
     const { correo, codigo } = req.body;
+    console.log("🔐 Intentando verificar:", { correo, codigo });
+    
     db.query("SELECT * FROM usuarios WHERE correo = ? AND codigo_verificacion = ?", [correo, codigo], (err, r) => {
-        if (r.length === 0) return res.status(400).json({ mensaje: "Código incorrecto" });
-        db.query("UPDATE usuarios SET es_verificado = 1 WHERE correo = ?", [correo], () => res.json({ mensaje: "OK" }));
+        if (err) {
+            console.log("❌ Error en verificación:", err.message);
+            return res.status(500).json({ mensaje: "Error al verificar" });
+        }
+        
+        if (r.length === 0) {
+            console.log("❌ Código incorrecto para:", correo);
+            return res.status(400).json({ mensaje: "Código incorrecto" });
+        }
+        
+        console.log("✅ Código correcto, actualizando usuario:", correo);
+        db.query("UPDATE usuarios SET es_verificado = 1 WHERE correo = ?", [correo], (err2) => {
+            if (err2) {
+                console.log("❌ Error al actualizar:", err2.message);
+                return res.status(500).json({ mensaje: "Error al verificar cuenta" });
+            }
+            console.log("✅ Usuario verificado:", correo);
+            res.status(200).json({ mensaje: "OK" });
+        });
     });
 });
 

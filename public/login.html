@@ -118,12 +118,30 @@
         }
 
         async function hacerRegistro() {
+            const nombre = document.getElementById('reg_nombre').value.trim();
+            const correo = document.getElementById('reg_correo').value.trim();
+            const password = document.getElementById('reg_pass').value.trim();
+            const rol = document.getElementById('reg_rol').value;
+
+            // Validación básica
+            if (!nombre || !correo || !password || !rol) {
+                alert("Por favor, completa todos los campos");
+                return;
+            }
+
+            if (password.length < 6) {
+                alert("La contraseña debe tener al menos 6 caracteres");
+                return;
+            }
+
             const datos = {
-                nombre: document.getElementById('reg_nombre').value,
-                correo: document.getElementById('reg_correo').value,
-                password: document.getElementById('reg_pass').value,
-                rol: document.getElementById('reg_rol').value
+                nombre: nombre,
+                correo: correo,
+                password: password,
+                rol: rol
             };
+
+            console.log('📝 Intentando registrar:', datos);
 
             try {
                 const res = await fetch('/api/usuarios', {
@@ -133,19 +151,34 @@
                 });
                 const data = await res.json();
 
+                console.log('📬 Respuesta del servidor:', { status: res.status, ok: res.ok, data });
+
                 if (res.ok) {
+                    console.log('✅ Registro exitoso, mostrando verificación');
                     document.getElementById('form-registro').style.display = 'none';
                     document.getElementById('seccion-verificacion').style.display = 'block';
                     correoPendiente = datos.correo;
                     alert("¡Código enviado! Revisa tu correo (incluso carpeta Spam)");
                 } else {
-                    alert(data.mensaje);
+                    console.log('❌ Error en registro:', data.mensaje);
+                    alert("Error: " + (data.mensaje || 'No se pudo registrar'));
                 }
-            } catch (error) { alert("Error de conexión"); }
+            } catch (error) { 
+                console.error('⚠️ Error de conexión:', error);
+                alert("Error de conexión: " + error.message); 
+            }
         }
 
         async function verificarCodigo() {
             const codigo = document.getElementById('input_codigo').value;
+            
+            if (!codigo || codigo.length < 6) {
+                alert("Ingresa un código válido de 6 dígitos");
+                return;
+            }
+
+            console.log('🔐 Verificando código:', { correo: correoPendiente, codigo });
+
             try {
                 const res = await fetch('/api/verificar', {
                     method: 'POST',
@@ -154,13 +187,20 @@
                 });
                 const data = await res.json();
 
+                console.log('📬 Respuesta de verificación:', { status: res.status, data });
+
                 if (res.ok) {
+                    console.log('✅ Código verificado correctamente');
                     alert("Cuenta verificada. Inicia sesión.");
                     location.reload(); 
                 } else {
-                    alert(data.mensaje);
+                    console.log('❌ Error en verificación:', data.mensaje);
+                    alert("Error: " + (data.mensaje || 'Código incorrecto'));
                 }
-            } catch (error) { alert("Error de conexión"); }
+            } catch (error) { 
+                console.error('⚠️ Error de conexión:', error);
+                alert("Error de conexión: " + error.message); 
+            }
         }
     </script>
 </body>
