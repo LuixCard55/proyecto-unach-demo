@@ -201,4 +201,9 @@ app.get('/api/stats', (req, res) => {
     });
 });
 //Se cambio de este modo al listen porque en producción (Railway) no se puede usar un puerto fijo como el 3000, sino que se debe usar el que asigna la plataforma a través de la variable de entorno PORT. De esta forma, el servidor funcionará tanto en desarrollo (usando el puerto 3000) como en producción (usando el puerto asignado por Railway).
-app.listen(PORT, () => console.log(`🚀 Servidor listo en puerto ${PORT}`));
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Servidor listo en puerto ${PORT}`);
+});
