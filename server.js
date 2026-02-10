@@ -18,8 +18,8 @@ const PORT = process.env.PORT || 3000;
 // Esto permite que el servidor encuentre tus HTML donde sea que estén (en 'public' o en la raíz)
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('public'));      // Busca en carpeta public
-app.use(express.static(__dirname));     // Busca en la carpeta raíz (DONDE ESTÁS AHORA)
+app.use(express.static(path.join(__dirname, 'public')));      // Busca en carpeta public con ruta absoluta
+//app.use(express.static(__dirname));     // Busca en la carpeta raíz (DONDE ESTÁS AHORA)
 
 // Evitar que se apague el servidor por errores
 process.on('uncaughtException', (err) => {
@@ -71,6 +71,11 @@ const upload = multer({ storage: storage });
 // Asegúrate de crear un "App Password" en tu cuenta de Gmail si usas autenticación de dos factores, y usa ese password aquí.
 
 // ================= RUTAS =================
+
+// Ruta raíz que redirige a login.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
 
 // LOGIN (Admite Admin siempre, verifica a los demás)
 app.post('/api/login', (req, res) => {
