@@ -75,8 +75,18 @@ const upload = multer({ storage: storage });
 // LOGIN (Admite Admin siempre, verifica a los demás)
 app.post('/api/login', (req, res) => {
     const { correo, password } = req.body;
-    const sql = 'SELECT * FROM usuarios WHERE correo = ? AND password = ?';
-    db.query(sql, [correo, password], (err, result) => {
+    
+    // Validar que los campos no estén vacíos
+    if (!correo || !password) {
+        return res.status(400).json({ error: "Correo y contraseña son obligatorios" });
+    }
+
+    // Trimear y convertir a minúsculas para consistencia
+    const correoNormalizado = correo.trim().toLowerCase();
+    const passwordTrimmed = password.trim();
+
+    const sql = 'SELECT * FROM usuarios WHERE LOWER(correo) = ? AND password = ?';
+    db.query(sql, [correoNormalizado, passwordTrimmed], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         if (result.length > 0) {
             const u = result[0];
@@ -98,14 +108,35 @@ app.post('/api/login', (req, res) => {
 app.post('/api/usuarios', (req, res) => {
   const { nombre, correo, password, rol } = req.body;
 
+  // Validar campos obligatorios
   if (!nombre || !correo || !password || !rol) {
     return res.status(400).json({ mensaje: "Faltan datos obligatorios" });
   }
 
+  // Trimear y normalizar datos
+  const nombreTrimmed = nombre.trim();
+  const correoNormalizado = correo.trim().toLowerCase();
+  const passwordTrimmed = password.trim();
+
+  // Validar longitud del nombre
+  if (nombreTrimmed.length < 3 || nombreTrimmed.length > 255) {
+    return res.status(400).json({ mensaje: "El nombre debe tener entre 3 y 255 caracteres" });
+  }
+
   // Validar formato de email
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(correo)) {
+  if (!emailRegex.test(correoNormalizado)) {
     return res.status(400).json({ mensaje: "Por favor, ingresa un correo electrónico válido (ej: usuario@gmail.com)" });
+  }
+
+  // Validar longitud del email
+  if (correoNormalizado.length > 254) {
+    return res.status(400).json({ mensaje: "El correo es demasiado largo" });
+  }
+
+  // Validar longitud de contraseña
+  if (passwordTrimmed.length < 6 || passwordTrimmed.length > 255) {
+    return res.status(400).json({ mensaje: "La contraseña debe tener entre 6 y 255 caracteres" });
   }
 
   const codigo = Math.floor(100000 + Math.random() * 900000).toString();
@@ -115,7 +146,7 @@ app.post('/api/usuarios', (req, res) => {
     VALUES (?, ?, ?, ?, ?, 0)
   `;
 
-  db.query(sql, [nombre, correo, password, rol, codigo], async (err) => {
+  db.query(sql, [nombreTrimmed, correoNormalizado, passwordTrimmed, rol, codigo], async (err) => {
     if (err) {
       if (err.code === 'ER_DUP_ENTRY') {
         return res.status(400).json({ mensaje: "Este correo ya está registrado" });
@@ -206,7 +237,7 @@ app.post('/api/usuarios', (req, res) => {
 
     } catch (e) {
       // ❌ si falla el envío, borra el usuario para que pueda reintentar
-      db.query("DELETE FROM usuarios WHERE correo = ?", [correo], () => {
+      db.query("DELETE FROM usuarios WHERE LOWER(correo) = ?", [correoNormalizado], () => {
         return res.status(500).json({
           mensaje: "No se pudo enviar el correo de verificación. Intenta nuevamente.",
           detalle: e.message
@@ -218,11 +249,18 @@ app.post('/api/usuarios', (req, res) => {
 
 // ... (resto del código del servidor: login, verificar, etc.) ...
 // REENVIAR CÓDIGO DE VERIFICACIÓN si no llegó el correo original
-    app.post('/api/reenviar-codigo', (req, res) => {
+app.post('/api/reenviar-codigo', (req, res) => {
     const { correo } = req.body;
-    if (!correo) return res.status(400).json({ mensaje: "Falta correo" });
+    
+    // Validar que el correo no esté vacío
+    if (!correo) {
+        return res.status(400).json({ mensaje: "El correo es obligatorio" });
+    }
 
-    db.query("SELECT * FROM usuarios WHERE correo = ?", [correo], async (err, r) => {
+    // Trimear y normalizar correo
+    const correoNormalizado = correo.trim().toLowerCase();
+
+    db.query("SELECT * FROM usuarios WHERE LOWER(correo) = ?", [correoNormalizado], async (err, r) => {
         if (err) return res.status(500).json({ mensaje: "Error DB", detalle: err.message });
         if (!r || r.length === 0) return res.status(404).json({ mensaje: "No existe ese correo" });
 
@@ -231,7 +269,7 @@ app.post('/api/usuarios', (req, res) => {
 
         const nuevoCodigo = Math.floor(100000 + Math.random() * 900000).toString();
 
-        db.query("UPDATE usuarios SET codigo_verificacion = ? WHERE correo = ?", [nuevoCodigo, correo], async (err2) => {
+        db.query("UPDATE usuarios SET codigo_verificacion = ? WHERE LOWER(correo) = ?", [nuevoCodigo, correoNormalizado], async (err2) => {
         if (err2) return res.status(500).json({ mensaje: "Error DB", detalle: err2.message });
 
         try {
@@ -298,7 +336,7 @@ app.post('/api/usuarios', (req, res) => {
             
             await resend.emails.send({
               from: process.env.RESEND_FROM || "SGIAA <no-reply@sgiaair.com>",
-              to: correo,
+              to: u.correo,
               subject: "🔄 Reenvío de Código de Verificación - SGIAA UNACH",
               html: emailHtml,
             });
@@ -313,26 +351,41 @@ app.post('/api/usuarios', (req, res) => {
 // VERIFICAR
 app.post('/api/verificar', (req, res) => {
     const { correo, codigo } = req.body;
-    console.log("🔐 Intentando verificar:", { correo, codigo });
     
-    db.query("SELECT * FROM usuarios WHERE correo = ? AND codigo_verificacion = ?", [correo, codigo], (err, r) => {
+    // Validar que los campos no estén vacíos
+    if (!correo || !codigo) {
+        return res.status(400).json({ mensaje: "Correo y código son obligatorios" });
+    }
+
+    // Trimear y normalizar correo
+    const correoNormalizado = correo.trim().toLowerCase();
+    const codigoTrimmed = codigo.toString().trim();
+
+    // Validar formato del código (debe ser exactamente 6 dígitos)
+    if (!/^\d{6}$/.test(codigoTrimmed)) {
+        return res.status(400).json({ mensaje: "El código debe tener exactamente 6 dígitos" });
+    }
+
+    console.log("🔐 Intentando verificar:", { correo: correoNormalizado, codigo: codigoTrimmed });
+    
+    db.query("SELECT * FROM usuarios WHERE LOWER(correo) = ? AND codigo_verificacion = ?", [correoNormalizado, codigoTrimmed], (err, r) => {
         if (err) {
             console.log("❌ Error en verificación:", err.message);
             return res.status(500).json({ mensaje: "Error al verificar" });
         }
         
         if (r.length === 0) {
-            console.log("❌ Código incorrecto para:", correo);
+            console.log("❌ Código incorrecto para:", correoNormalizado);
             return res.status(400).json({ mensaje: "Código incorrecto" });
         }
         
-        console.log("✅ Código correcto, actualizando usuario:", correo);
-        db.query("UPDATE usuarios SET es_verificado = 1 WHERE correo = ?", [correo], (err2) => {
+        console.log("✅ Código correcto, actualizando usuario:", correoNormalizado);
+        db.query("UPDATE usuarios SET es_verificado = 1 WHERE LOWER(correo) = ?", [correoNormalizado], (err2) => {
             if (err2) {
                 console.log("❌ Error al actualizar:", err2.message);
                 return res.status(500).json({ mensaje: "Error al verificar cuenta" });
             }
-            console.log("✅ Usuario verificado:", correo);
+            console.log("✅ Usuario verificado:", correoNormalizado);
             // Retornar datos del usuario para login automático
             const usuario = r[0];
             res.status(200).json({ 

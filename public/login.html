@@ -98,8 +98,14 @@
     <script>
         let correoPendiente = localStorage.getItem("correoPendiente") || "";
         async function hacerLogin() {
-            const correo = document.getElementById('log_correo').value;
-            const password = document.getElementById('log_pass').value;
+            const correo = document.getElementById('log_correo').value.trim().toLowerCase();
+            const password = document.getElementById('log_pass').value.trim();
+
+            // Validación básica
+            if (!correo || !password) {
+                alert("Por favor, ingresa correo y contraseña");
+                return;
+            }
 
             try {
                 const res = await fetch('/api/login', {
@@ -122,13 +128,19 @@
 
         async function hacerRegistro() {
             const nombre = document.getElementById('reg_nombre').value.trim();
-            const correo = document.getElementById('reg_correo').value.trim();
+            const correo = document.getElementById('reg_correo').value.trim().toLowerCase();
             const password = document.getElementById('reg_pass').value.trim();
             const rol = document.getElementById('reg_rol').value;
 
             // Validación básica
             if (!nombre || !correo || !password || !rol) {
                 alert("Por favor, completa todos los campos");
+                return;
+            }
+
+            // Validar longitud del nombre
+            if (nombre.length < 3) {
+                alert("El nombre debe tener al menos 3 caracteres");
                 return;
             }
 
@@ -139,8 +151,19 @@
                 return;
             }
 
+            // Validar longitud del email
+            if (correo.length > 255) {
+                alert("El correo no puede exceder 255 caracteres");
+                return;
+            }
+
             if (password.length < 6) {
                 alert("La contraseña debe tener al menos 6 caracteres");
+                return;
+            }
+
+            if (password.length > 255) {
+                alert("La contraseña no puede exceder 255 caracteres");
                 return;
             }
 
@@ -182,10 +205,15 @@
         }
 
         async function verificarCodigo() {
-            const codigo = document.getElementById('input_codigo').value;
+            const codigo = document.getElementById('input_codigo').value.trim();
             
-            if (!codigo || codigo.length < 6) {
-                alert("Ingresa un código válido de 6 dígitos");
+            if (!codigo || codigo.length !== 6) {
+                alert("El código debe tener exactamente 6 dígitos");
+                return;
+            }
+
+            if (!/^\d{6}$/.test(codigo)) {
+                alert("El código debe contener solo números");
                 return;
             }
 
