@@ -310,7 +310,7 @@
     </div>
 
     <div class="modal fade" id="modalEditar" tabindex="-1">
-      <div class="modal-dialog modal-lg">
+      <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header bg-primary text-white">
             <h5 class="modal-title">Editar Información</h5>
@@ -318,36 +318,12 @@
           </div>
           <div class="modal-body">
             <input type="hidden" id="edit_id">
-            
-            <div class="row mb-3">
-                <div class="col-md-6"><label>Nombre</label><input type="text" id="edit_nombre" class="form-control"></div>
-                <div class="col-md-6"><label>Correo</label><input type="email" id="edit_correo" class="form-control"></div>
-            </div>
-
-            <ul class="nav nav-tabs" id="myTab" role="tablist">
-              <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-personal">Datos</button></li>
-              <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-info">Información Académica</button></li>
-            </ul>
-
-            <div class="tab-content p-3 border border-top-0">
-                <div class="tab-pane fade show active" id="tab-personal">
-                    <div class="row g-2">
-                        <div class="col-4"><label>C.I.</label><input type="text" id="hv_ci" class="form-control form-control-sm"></div>
-                        <div class="col-4"><label>Celular</label><input type="text" id="hv_celular" class="form-control form-control-sm"></div>
-                        <div class="col-4"><label>F. Nacimiento</label><input type="date" id="hv_fnac" class="form-control form-control-sm"></div>
-                        <div class="col-12"><label>Domicilio</label><input type="text" id="hv_domicilio" class="form-control form-control-sm"></div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="tab-info">
-                    <label>Formación (Títulos)</label><textarea id="hv_formacion" class="form-control mb-2" rows="3"></textarea>
-                    <label>Experiencia</label><textarea id="hv_experiencia" class="form-control mb-2" rows="3"></textarea>
-                    <label>Publicaciones</label><textarea id="hv_publicaciones" class="form-control mb-2" rows="3"></textarea>
-                    <label>Capacitación</label><textarea id="hv_capacitacion" class="form-control" rows="3"></textarea>
-                </div>
-            </div>
+            <div class="mb-3"><label>Nombre Completo</label><input type="text" id="edit_nombre" class="form-control" required></div>
+            <div class="mb-3"><label>Correo Electrónico</label><input type="email" id="edit_correo" class="form-control" required></div>
+            <p class="text-muted small">💡 <strong>Nota:</strong> Se enviará un enlace de verificación con los datos de la cuenta al nuevo correo.</p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" onclick="guardarEdicion()">Guardar</button>
+            <button type="button" class="btn btn-primary" onclick="guardarEdicion()">Actualizar Datos</button>
           </div>
         </div>
       </div>
@@ -372,27 +348,7 @@
       </div>
     </div>
 
-    <div class="modal fade" id="modalEditarDocente" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header bg-warning text-dark">
-            <h5 class="modal-title">Editar Docente</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <form id="form-editar-docente">
-              <input type="hidden" id="editar-docente-id">
-              <input type="text" id="editar-docente-nombre" class="form-control mb-2" placeholder="Nombre" required>
-              <input type="email" id="editar-docente-correo" class="form-control mb-2" placeholder="Correo" required>
-              <p class="text-muted small">💡 <strong>Nota:</strong> Se enviará un enlace de verificación con los datos de la cuenta al nuevo correo.</p>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-warning" onclick="guardarEdicionDocente()">Actualizar Datos</button>
-          </div>
-        </div>
-      </div>
-    </div>
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -415,7 +371,7 @@
                             <td><span class="badge bg-info text-dark">Docente</span></td>
                             <td class="text-end">
                                 <button class="btn btn-sm btn-info me-1" onclick="verHojaVida(${d.id})"><i class="fas fa-eye text-white"></i> Ver CV</button>
-                                <button class="btn btn-sm btn-warning me-1 btn-accion" data-bs-toggle="modal" data-bs-target="#modalEditarDocente" onclick="cargarEditarDocente(${d.id}, '${d.nombre}', '${d.correo}')" title="Editar datos"><i class="fas fa-user-edit"></i></button>
+                                <button class="btn btn-sm btn-warning me-1 btn-accion" data-bs-toggle="modal" data-bs-target="#modalEditar" onclick="cargarEditarDocente(${d.id}, '${d.nombre}', '${d.correo}')" title="Editar datos"><i class="fas fa-user-edit"></i></button>
                                 <button class="btn btn-sm btn-outline-primary me-1 btn-accion" onclick="abrirModalEditar(${d.id})"><i class="fas fa-edit"></i></button>
                                 <button class="btn btn-sm btn-outline-danger btn-accion" onclick="eliminarUsuario(${d.id})"><i class="fas fa-trash"></i></button>
                             </td>
@@ -497,15 +453,15 @@
         }
 
         function cargarEditarDocente(id, nombre, correo) {
-            document.getElementById('editar-docente-id').value = id;
-            document.getElementById('editar-docente-nombre').value = nombre;
-            document.getElementById('editar-docente-correo').value = correo;
+            document.getElementById('edit_id').value = id;
+            document.getElementById('edit_nombre').value = nombre;
+            document.getElementById('edit_correo').value = correo;
         }
 
-        async function guardarEdicionDocente() {
-            const id = document.getElementById('editar-docente-id').value;
-            const nombre = document.getElementById('editar-docente-nombre').value;
-            const correo = document.getElementById('editar-docente-correo').value;
+        async function guardarEdicion() {
+            const id = document.getElementById('edit_id').value;
+            const nombre = document.getElementById('edit_nombre').value;
+            const correo = document.getElementById('edit_correo').value;
 
             if (!nombre || !correo) {
                 alert("Nombre y correo son obligatorios");
@@ -523,8 +479,8 @@
 
                 if (res.ok) {
                     alert(data.mensaje || "Docente actualizado. Enlace de verificación enviado.");
-                    document.getElementById('form-editar-docente').reset();
-                    const modalElement = document.getElementById('modalEditarDocente');
+                    document.getElementById('modalEditar').reset?.();
+                    const modalElement = document.getElementById('modalEditar');
                     const modal = bootstrap.Modal.getInstance(modalElement);
                     if(modal) modal.hide();
                     cargarDocentes();
@@ -535,35 +491,6 @@
                 console.error('Error:', error);
                 alert("Error al actualizar el docente");
             }
-        }
-
-        async function guardarEdicion() {
-            const id = document.getElementById('edit_id').value;
-            const hojaVidaObj = {
-                ci: document.getElementById('hv_ci').value,
-                celular: document.getElementById('hv_celular').value,
-                fnac: document.getElementById('hv_fnac').value,
-                domicilio: document.getElementById('hv_domicilio').value,
-                formacion: document.getElementById('hv_formacion').value,
-                experiencia: document.getElementById('hv_experiencia').value,
-                publicaciones: document.getElementById('hv_publicaciones').value,
-                capacitacion: document.getElementById('hv_capacitacion').value
-            };
-
-            const datos = {
-                nombre: document.getElementById('edit_nombre').value,
-                correo: document.getElementById('edit_correo').value,
-                hoja_vida: JSON.stringify(hojaVidaObj),
-                rol: 'docente'
-            };
-
-            await fetch(`/api/usuarios/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datos)
-            });
-            modalEdicion.hide();
-            cargarDocentes();
         }
 
         // --- OTROS ---
