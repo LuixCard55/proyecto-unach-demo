@@ -102,6 +102,12 @@ app.post('/api/usuarios', (req, res) => {
     return res.status(400).json({ mensaje: "Faltan datos obligatorios" });
   }
 
+  // Validar formato de email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(correo)) {
+    return res.status(400).json({ mensaje: "Por favor, ingresa un correo electrónico válido (ej: usuario@gmail.com)" });
+  }
+
   const codigo = Math.floor(100000 + Math.random() * 900000).toString();
 
   const sql = `
@@ -327,7 +333,18 @@ app.post('/api/verificar', (req, res) => {
                 return res.status(500).json({ mensaje: "Error al verificar cuenta" });
             }
             console.log("✅ Usuario verificado:", correo);
-            res.status(200).json({ mensaje: "OK" });
+            // Retornar datos del usuario para login automático
+            const usuario = r[0];
+            res.status(200).json({ 
+                mensaje: "Cuenta verificada correctamente", 
+                usuario: {
+                    id: usuario.id,
+                    nombre: usuario.nombre,
+                    correo: usuario.correo,
+                    rol: usuario.rol,
+                    es_verificado: 1
+                }
+            });
         });
     });
 });

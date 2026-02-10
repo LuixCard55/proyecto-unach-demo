@@ -132,6 +132,13 @@
                 return;
             }
 
+            // Validar formato de email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(correo)) {
+                alert("Por favor, ingresa un correo electrónico válido (ej: usuario@gmail.com)");
+                return;
+            }
+
             if (password.length < 6) {
                 alert("La contraseña debe tener al menos 6 caracteres");
                 return;
@@ -195,9 +202,17 @@
                 console.log('📬 Respuesta de verificación:', { status: res.status, data });
 
                 if (res.ok) {
-                    console.log('✅ Código verificado correctamente');
-                    alert("Cuenta verificada. Inicia sesión.");
-                    location.reload(); 
+                    console.log('✅ Código verificado correctamente, iniciando sesión automática');
+                    // Guardar datos del usuario para login automático
+                    if (data.usuario) {
+                        localStorage.setItem('usuario_rol', data.usuario.rol);
+                        localStorage.setItem('usuario_id', data.usuario.id);
+                        localStorage.setItem('usuario_nombre', data.usuario.nombre);
+                        localStorage.removeItem("correoPendiente");
+                    }
+                    alert("¡Cuenta verificada! Bienvenido/a al SGIAA");
+                    // Redirigir automáticamente al dashboard
+                    window.location.href = 'dashboard.html';
                 } else {
                     console.log('❌ Error en verificación:', data.mensaje);
                     alert("Error: " + (data.mensaje || 'Código incorrecto'));
